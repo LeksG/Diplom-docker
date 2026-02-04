@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react'; // 👈 1. Додали Suspense
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useWishlist } from '@/context/WishlistContext'; 
@@ -27,11 +27,11 @@ interface Order {
   items: OrderItem[];
 }
 
-export default function ProfilePage() {
+// 👇 2. Це тепер ВНУТРІШНІЙ компонент (прибрали export default)
+function ProfileContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
-  // 👇 1. ОТРИМУЄМО ФУНКЦІЮ ВИДАЛЕННЯ (removeFromWishlist)
   const { items: wishlistItems, removeFromWishlist } = useWishlist();
 
   // Стан інтерфейсу
@@ -52,7 +52,7 @@ export default function ProfilePage() {
     createdAt: ''
   });
 
-useEffect(() => {
+  useEffect(() => {
     const tab = searchParams.get('tab');
     if (tab === 'favorites') {
       setActiveTab('favorites');
@@ -395,11 +395,11 @@ useEffect(() => {
                   </div>
                 ) : (
                   <div className="py-12 border-2 border-dashed border-gray-100 rounded-xl text-center">
-                     <div className="text-4xl mb-3">💔</div>
-                     <p className="text-gray-500 mb-4">Ваш список бажань порожній</p>
-                     <Link href="/catalog" className="text-blue-600 font-bold hover:underline">
-                       Знайти щось цікаве
-                     </Link>
+                      <div className="text-4xl mb-3">💔</div>
+                      <p className="text-gray-500 mb-4">Ваш список бажань порожній</p>
+                      <Link href="/catalog" className="text-blue-600 font-bold hover:underline">
+                        Знайти щось цікаве
+                      </Link>
                   </div>
                 )}
               </div>
@@ -409,5 +409,14 @@ useEffect(() => {
         </div>
       </div>
     </main>
+  );
+}
+
+// 👇 4. ГОЛОВНИЙ КОМПОНЕНТ-ОБГОРТКА
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-gray-500">Завантаження...</div>}>
+      <ProfileContent />
+    </Suspense>
   );
 }
