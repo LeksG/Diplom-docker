@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 
+export const dynamic = "force-dynamic";
+
 // 1. ОТРИМАТИ ОДИН ТОВАР (GET)
 export async function GET(
   req: Request,
