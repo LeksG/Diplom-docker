@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-// 👇 1. Імпортуємо наш компонент завантаження
 import ImageUploader from '@/components/ImageUploader';
 
+// 👇 1. Define the Category interface
 interface Category {
   id: number;
   name: string;
@@ -18,52 +18,45 @@ interface VariantItem {
   stock: number;
 }
 
-// 👇 2. Інтерфейс для картинок
 interface ProductImageItem {
   url: string;
   color: string | null;
 }
 
-export default function AdminProductForm() {
+// 👇 2. Define Props interface
+interface AdminProductFormProps {
+  categories: Category[];
+}
+
+// 👇 3. Accept categories as a prop
+export default function AdminProductForm({ categories }: AdminProductFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
-  // === ДАНІ ТОВАРУ ===
+  // === PRODUCT DATA ===
   const [title, setTitle] = useState('');
   const [price, setPrice] = useState('');
   const [oldPrice, setOldPrice] = useState('');
-  const [imageUrl, setImageUrl] = useState(''); // Основне фото (збережемо для сумісності)
+  const [imageUrl, setImageUrl] = useState(''); 
   const [description, setDescription] = useState('');
-  
-  // 👇 3. Стейт для списку картинок
   const [images, setImages] = useState<ProductImageItem[]>([]);
 
-  // === ЛОГІКА ІНТЕРФЕЙСУ ===
+  // === UI LOGIC ===
   const [gender, setGender] = useState('men'); 
   const [type, setType] = useState('hoodies'); 
 
-  const [dbCategories, setDbCategories] = useState<Category[]>([]);
+  // 👇 4. We use the prop 'categories' directly. No need for dbCategories state or useEffect fetch.
   
-  // === ВАРІАНТИ (SKU) ===
+  // === VARIANTS (SKU) ===
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [variants, setVariants] = useState<VariantItem[]>([]); 
 
-  // 1. Завантажуємо категорії
-  useEffect(() => {
-    fetch('/api/categories')
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) setDbCategories(data);
-      })
-      .catch(err => console.error(err));
-  }, []);
-
-  // 2. Обчислюємо поточний ID категорії
+  // 5. Calculate current category ID based on the passed prop
   const targetSlug = `${gender}-${type}`;
-  const foundCategory = dbCategories.find(c => c.slug === targetSlug);
+  const foundCategory = categories.find(c => c.slug === targetSlug);
 
-  // Списки
+  // Lists
   const availableSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
   const availableColors = ['чорний', 'білий', 'сірий', 'бежевий', 'синій', 'червоний', 'зелений'];
   
@@ -85,11 +78,11 @@ export default function AdminProductForm() {
   ];
   const availableTypes = gender === 'women' ? [...COMMON_TYPES, ...WOMEN_ONLY_TYPES] : COMMON_TYPES;
 
-  // Тоглери
+  // Togglers
   const toggleSize = (size: string) => setSelectedSizes(p => p.includes(size) ? p.filter(s => s !== size) : [...p, size]);
   const toggleColor = (color: string) => setSelectedColors(p => p.includes(color) ? p.filter(c => c !== color) : [...p, color]);
 
-  // Генерація варіантів
+  // Generate Variants
   const generateVariants = () => {
     if (selectedSizes.length === 0 || selectedColors.length === 0) {
       alert("⚠️ Оберіть хоча б один розмір та колір!");
@@ -116,7 +109,7 @@ export default function AdminProductForm() {
     setVariants(prev => prev.map(v => v.id === id ? { ...v, stock: Number(newStock) } : v));
   };
 
-  // ВІДПРАВКА
+  // SUBMIT
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -130,7 +123,6 @@ export default function AdminProductForm() {
       return;
     }
 
-    // Якщо головне фото не задане вручну, беремо перше з галереї
     const mainImage = imageUrl || (images.length > 0 ? images[0].url : "");
 
     setLoading(true);
@@ -140,10 +132,10 @@ export default function AdminProductForm() {
       description,
       price: parseFloat(price),
       oldPrice: oldPrice ? parseFloat(oldPrice) : null,
-      imageUrl: mainImage, // Автоматично беремо перше фото
+      imageUrl: mainImage,
       categoryId: foundCategory.id,
       variants: variants, 
-      images: images // 👇 4. Відправляємо масив картинок
+      images: images 
     };
 
     try {
@@ -178,7 +170,7 @@ export default function AdminProductForm() {
       
       <form onSubmit={handleSubmit} className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 space-y-8">
       
-        {/* 1. ОСНОВНА ІНФО */}
+        {/* 1. MAIN INFO */}
         <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4 p-1 bg-gray-100 rounded-xl border border-gray-200">
                 <button type="button" onClick={() => setGender('men')}
@@ -209,7 +201,7 @@ export default function AdminProductForm() {
                 </div>
             </div>
 
-            {/* КАТЕГОРІЯ */}
+            {/* CATEGORY */}
             <div className={`p-6 rounded-xl border ${foundCategory ? 'bg-gray-50 border-gray-300' : 'bg-red-50 border-red-200'}`}>
                 <label className="block text-xs font-black text-black uppercase mb-2">
                 Категорія ({gender === 'men' ? 'Чоловіки' : 'Жінки'})
@@ -239,17 +231,17 @@ export default function AdminProductForm() {
                 </div>
             </div>
 
-            {/* 👇 5. ВСТАВЛЯЄМО БЛОК ЗАВАНТАЖЕННЯ ФОТО */}
+            {/* IMAGE UPLOADER */}
             <div>
                <label className={labelStyle}>Фотографії товару</label>
                <ImageUploader 
-                  existingImages={images} 
-                  colors={availableColors} 
-                  onImagesChange={setImages} 
+                 existingImages={images} 
+                 colors={availableColors} 
+                 onImagesChange={setImages} 
                />
             </div>
 
-            {/* Залишаємо старий інпут для сумісності або ручного вводу */}
+            {/* Manual Image URL (Fallback) */}
             <div>
                 <label className={labelStyle}>Фото URL (або залиште пустим, якщо завантажили вище)</label>
                 <input type="text" className={inputStyle} value={imageUrl} onChange={e => setImageUrl(e.target.value)} />
@@ -263,13 +255,13 @@ export default function AdminProductForm() {
 
         <hr className="border-gray-200" />
 
-        {/* 2. НАЛАШТУВАННЯ ВАРІАНТІВ (SKU) */}
+        {/* 2. VARIANTS CONFIG */}
         <div className="space-y-6">
             <h2 className="text-xl font-black uppercase">Варіанти та Склад</h2>
             
             <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 space-y-6">
                 
-                {/* Вибір Розмірів */}
+                {/* Size Selector */}
                 <div>
                     <label className={labelStyle}>1. Оберіть Розміри</label>
                     <div className="flex gap-2 flex-wrap">
@@ -284,7 +276,7 @@ export default function AdminProductForm() {
                     </div>
                 </div>
 
-                {/* Вибір Кольорів */}
+                {/* Color Selector */}
                 <div>
                     <label className={labelStyle}>2. Оберіть Кольори</label>
                     <div className="flex gap-2 flex-wrap">
@@ -299,14 +291,14 @@ export default function AdminProductForm() {
                     </div>
                 </div>
 
-                {/* Кнопка генерації */}
+                {/* Generate Button */}
                 <button type="button" onClick={generateVariants} className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition shadow">
                     🔄 Згенерувати таблицю кількості
                 </button>
 
             </div>
 
-            {/* ТАБЛИЦЯ ВАРІАНТІВ */}
+            {/* VARIANTS TABLE */}
             {variants.length > 0 && (
                 <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
                     <table className="w-full text-left bg-white">
@@ -338,7 +330,7 @@ export default function AdminProductForm() {
             )}
         </div>
 
-        {/* КНОПКА ЗБЕРЕЖЕННЯ */}
+        {/* SAVE BUTTON */}
         <button disabled={loading || !foundCategory} className="w-full py-4 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition shadow-lg disabled:opacity-50 text-lg border-b-4 border-green-800 active:border-b-0 active:translate-y-1">
             {loading ? 'Збереження...' : '✅ Створити Товар'}
         </button>

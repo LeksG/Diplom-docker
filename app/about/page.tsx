@@ -14,7 +14,7 @@ export default function AboutPage() {
 
         <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
           <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tight mb-6">
-            FIRMOVUY — це стиль, <span className="text-blue-500">який ти обираєш</span>
+            FIRMOVUY — це стиль, <span className="text-blue-500">який ти обираєш!</span>
           </h1>
           <p className="text-lg md:text-xl text-gray-300 leading-relaxed max-w-2xl mx-auto">
             Ми не просто продаємо одяг. Ми допомагаємо тобі виразити себе через якісні брендові речі, які дарують впевненість.
