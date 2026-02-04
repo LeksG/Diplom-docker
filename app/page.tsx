@@ -6,14 +6,16 @@ export const dynamic = 'force-dynamic';
 
 async function getLatestProducts() {
   const products = await prisma.product.findMany({
-    take: 12, // Беремо трохи більше товарів (12), щоб сітка була рівною
+    take: 12, 
     include: { category: true },
     orderBy: { createdAt: 'desc' },
   });
 
   return products.map(product => ({
     ...product,
+    // 👇 1. ВИПРАВЛЕННЯ: Конвертуємо ОБИДВІ ціни
     price: Number(product.price),
+    oldPrice: product.oldPrice ? Number(product.oldPrice) : null,
     sizes: product.sizes || [],
     colors: product.colors || []
   }));
@@ -54,22 +56,22 @@ export default async function Home() {
       </section>
 
       {/* 2. КАТЕГОРІЇ */}
-      <section className="py-24 px-4 max-w-6xl mx-auto"> {/* Зменшили контейнер до max-w-6xl */}
+      <section className="py-24 px-4 max-w-7xl mx-auto">
         <h2 className="text-4xl font-black text-slate-900 tracking-tight mb-12 text-center">ОБЕРИ КАТЕГОРІЮ</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Link href="/category/men-tshirts" className="relative h-[400px] group overflow-hidden rounded-3xl">
+          <Link href="/catalog?gender=men" className="relative h-[400px] group overflow-hidden rounded-3xl">
             <img src="https://images.unsplash.com/photo-1516257984-b1b4d8c9230e?auto=format&fit=crop&w=800&q=80" alt="Men" className="w-full h-full object-cover transition duration-700 group-hover:scale-110" />
             <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition flex items-end p-8">
               <span className="bg-white text-black px-6 py-3 rounded-full font-bold uppercase text-sm group-hover:px-8 transition-all">Чоловікам</span>
             </div>
           </Link>
-          <Link href="/category/women-tops" className="relative h-[400px] group overflow-hidden rounded-3xl">
+          <Link href="/catalog?gender=women" className="relative h-[400px] group overflow-hidden rounded-3xl">
             <img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80" alt="Women" className="w-full h-full object-cover transition duration-700 group-hover:scale-110" />
             <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition flex items-end p-8">
               <span className="bg-white text-black px-6 py-3 rounded-full font-bold uppercase text-sm group-hover:px-8 transition-all">Жінкам</span>
             </div>
           </Link>
-          <Link href="/category/men-hoodies" className="relative h-[400px] group overflow-hidden rounded-3xl">
+          <Link href="/catalog?category=men-hoodies" className="relative h-[400px] group overflow-hidden rounded-3xl">
             <img src="https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=800&q=80" alt="Hoodies" className="w-full h-full object-cover transition duration-700 group-hover:scale-110" />
             <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition flex items-end p-8">
               <span className="bg-white text-black px-6 py-3 rounded-full font-bold uppercase text-sm group-hover:px-8 transition-all">Худі Collection</span>
@@ -80,8 +82,7 @@ export default async function Home() {
 
       {/* 3. ОСТАННІ ТОВАРИ */}
       <section className="py-20 bg-gray-50">
-        {/* 👇 Зменшили ширину контейнера з 1400px до max-w-6xl (це зробить контент вужчим і акуратнішим) */}
-        <div className="max-w-6xl mx-auto px-4"> 
+        <div className="max-w-7xl mx-auto px-4"> 
           
           <div className="flex justify-between items-end mb-8">
             <div>
@@ -93,12 +94,9 @@ export default async function Home() {
             </Link>
           </div>
 
-          {/* 👇 ЗМІНИЛИ СІТКУ: Більше колонок = менші картки */}
-          {/* grid-cols-2: Телефон (2 в ряд, маленькі)
-              md:grid-cols-4: Планшет (4 в ряд)
-              lg:grid-cols-5: Комп'ютер (5 в ряд - це робить їх значно меншими, ніж 4)
-           */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-3 gap-4">
+          {/* 👇 2. ВИПРАВЛЕННЯ СІТКИ */}
+          {/* grid-cols-2 (моб) -> md:grid-cols-3 (планшет) -> lg:grid-cols-4 (ноут) -> xl:grid-cols-5 (великий екран) */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {products.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
