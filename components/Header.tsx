@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import AuthModal from './AuthModal'; 
 import { useWishlist } from '@/context/WishlistContext';
@@ -17,13 +17,29 @@ interface SearchResult {
   category: { name: string };
 }
 
+// ОКРЕМИЙ КОМПОНЕНТ ДЛЯ ПАРАМЕТРІВ (ВИРІШУЄ ПОМИЛКУ VERCEL)
+function AuthParamHandler({ setIsAuthOpen }: { setIsAuthOpen: (val: boolean) => void }) {
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (searchParams.get('auth') === 'true') {
+      setIsAuthOpen(true);
+      // Очищаємо URL від ?auth=true, щоб модалка не з'являлася знову при рефреші
+      router.replace(pathname);
+    }
+  }, [searchParams, pathname, router, setIsAuthOpen]);
+
+  return null;
+}
+
 export default function Header() {
   const { cartCount, toggleCart } = useCart();
   const { items: wishlistItems } = useWishlist(); 
   
   const [user, setUser] = useState<any>(null);
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const router = useRouter();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
 
@@ -31,15 +47,6 @@ export default function Header() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-
-  useEffect(() => {
-    if (searchParams.get('auth') === 'true') {
-      setIsAuthOpen(true);
-      // Очищаємо URL від ?auth=true, щоб модалка не з'являлася знову при рефреші
-      const newPath = pathname; 
-      router.replace(newPath);
-    }
-  }, [searchParams, pathname, router]);
 
   //  ЛОГІКА ПЕРЕВІРКИ КОРИСТУВАЧА 
   useEffect(() => {
@@ -71,8 +78,6 @@ export default function Header() {
 
   const isAdmin = user?.role === 'ADMIN' || user?.email === 'grand78122@gmail.com';
 
-
- 
   // ЛОГІКА ЖИВОГО ПОШУКУ
   useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
@@ -105,6 +110,11 @@ export default function Header() {
   return (
     <>
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
+
+        {/* ДОДАНО ОБГОРТКУ SUSPENSE */}
+      <Suspense fallback={null}>
+        <AuthParamHandler setIsAuthOpen={setIsAuthOpen} />
+      </Suspense>
 
       <header className="sticky top-0 z-40 w-full border-b border-gray-200 bg-white/90 backdrop-blur-md">
         <div className="relative flex h-20 items-center justify-between px-6 max-w-[1920px] mx-auto">
