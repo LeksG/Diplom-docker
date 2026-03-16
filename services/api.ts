@@ -67,6 +67,7 @@ export const AuthService = {
       body: JSON.stringify(data),
     });
     return res.json();
+    
   },
   register: async (data: any) => {
     const res = await fetch('/api/auth/register', {

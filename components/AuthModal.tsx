@@ -44,11 +44,9 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
       console.log("ВІДПОВІДЬ:", data);
 
-      if (data.error || data.message) {
-       if (isLogin && !data.token) {
-           throw new Error(data.error || data.message || 'Невірний логін або пароль');
-        }
-      }
+      if (data.error) {
+      throw new Error(data.error);
+    }
 
     
       if (isLogin) {
