@@ -14,10 +14,7 @@ interface Product {
   sizes?: string[];
   colors?: string[];
   stock?: number;
-  
-  // 👇 Список доступних розмірів
   availableSizes?: string[];
-  // 👇 НОВЕ: Список доступних кольорів
   availableColors?: string[];
 }
 
@@ -62,7 +59,7 @@ export default function ProductCard({ product }: { product: Product }) {
           )}
         </Link>
 
-        {/* ❤️ СЕРДЕЧКО */}
+        {/*  СЕРДЕЧКО */}
         <div className="absolute top-3 right-3 z-30">
           <div className="text-white filter drop-shadow-[0_0_1px_rgba(0,0,0,1)] hover:scale-110 transition-transform">
              <WishlistButton 
@@ -72,7 +69,7 @@ export default function ProductCard({ product }: { product: Product }) {
           </div>
         </div>
 
-        {/* 🏷️ БЕЙДЖІ */}
+        {/* БЕЙДЖІ */}
         <div className="absolute bottom-3 left-3 z-10 flex flex-col gap-1 transition-opacity duration-300 group-hover:opacity-0">
             {isOutOfStock ? (
                 <div className="bg-gray-800 text-white text-[10px] font-bold px-2 py-1 rounded-md">
@@ -91,14 +88,14 @@ export default function ProductCard({ product }: { product: Product }) {
             )}
         </div>
 
-        {/* 🎢 ВИЇЖДЖАЮЧА ПАНЕЛЬ */}
+        {/*  ВИЇЖДЖАЮЧА ПАНЕЛЬ */}
         {hasOptions && !isOutOfStock && (
           <div className="absolute bottom-0 left-0 w-full bg-white/95 backdrop-blur-md border-t border-gray-100 p-3 
                           transform translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out z-20">
             
             <div className="flex flex-col gap-2 items-center">
-              
-              {/* 👇 КОЛЬОРИ З ПЕРЕВІРКОЮ НАЯВНОСТІ 👇 */}
+            
+              {/*  КОЛЬОРИ З ПЕРЕВІРКОЮ НАЯВНОСТІ  */}
               {product.colors && product.colors.length > 0 && (
                 <div className="flex flex-wrap gap-2 justify-center">
                   {product.colors.map((color) => {
@@ -135,7 +132,7 @@ export default function ProductCard({ product }: { product: Product }) {
                 </div>
               )}
 
-              {/* 👇 РОЗМІРИ З ПЕРЕВІРКОЮ НАЯВНОСТІ 👇 */}
+              {/* РОЗМІРИ З ПЕРЕВІРКОЮ НАЯВНОСТІ  */}
               {product.sizes && product.sizes.length > 0 && (
                  <div className="flex flex-wrap gap-1 justify-center">
                    {product.sizes.map((size) => {

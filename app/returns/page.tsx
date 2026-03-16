@@ -86,8 +86,8 @@ export default function ReturnsPage() {
                 <p className="text-gray-600 text-sm leading-relaxed mb-4">
                   Надішліть посилку <b>Новою Поштою</b> за адресою, вказаною нижче. 
                 </p>
-                <div className="bg-gray-100 p-4 rounded-xl text-sm border border-gray-200">
-                  <p className="font-bold text-slate-900 mb-1">🏠 Адреса для повернення:</p>
+                <div className="bg-gray-100 p-4 rounded-xl text-sm border border-gray-200 text-gray-500">
+                  <p className="font-bold text-gray-600 mb-1">🏠 Адреса для повернення:</p>
                   <p>м. Київ, Відділення НП №150</p>
                   <p>Отримувач: ФОП Прізвище І.Б.</p>
                   <p>Телефон: +380 99 999 99 99</p>
@@ -122,7 +122,7 @@ export default function ReturnsPage() {
         {/* 5. КОНТАКТИ ПІДТРИМКИ */}
         <div className="text-center py-8">
           <p className="text-gray-500 mb-4">Виникли питання щодо повернення?</p>
-          <Link href="/about" className="text-blue-600 font-bold hover:underline text-lg">
+          <Link href="/contacts" className="text-blue-600 font-bold hover:underline text-lg">
             Зв'язатися з підтримкою
           </Link>
         </div>

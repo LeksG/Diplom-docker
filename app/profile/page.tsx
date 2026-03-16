@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react'; // 👈 1. Додали Suspense
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useWishlist } from '@/context/WishlistContext'; 
+import { UserService, OrderService } from '@/services/api';
+import Cookies from 'js-cookie';
 
-// === ТИПИ ДАНИХ ===
+// ТИПИ ДАНИХ 
 interface OrderItem {
   id: number;
   productTitle: string;
@@ -27,7 +29,6 @@ interface Order {
   items: OrderItem[];
 }
 
-// 👇 2. Це тепер ВНУТРІШНІЙ компонент (прибрали export default)
 function ProfileContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -61,7 +62,7 @@ function ProfileContent() {
     }
   }, [searchParams]);
   
-  // 1. ЗАВАНТАЖЕННЯ ДАНИХ
+  // 1. ЗАВАНТАЖЕННЯ ДАНИХ 
   useEffect(() => {
     const initProfile = async () => {
       const storedUser = localStorage.getItem('user');
@@ -74,26 +75,19 @@ function ProfileContent() {
       setIsLoading(true);
 
       try {
-        const res = await fetch('/api/user/get', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: parsedUser.email }),
+        const freshData = await UserService.getProfile(parsedUser.email);
+        
+        setUserData({
+          email: freshData.email,
+          fullName: freshData.fullName || parsedUser.name || '',
+          phone: freshData.phone || '',
+          country: freshData.country || '',
+          city: freshData.city || '',
+          address: freshData.address || '',
+          createdAt: freshData.createdAt || new Date().toISOString()
         });
-
-        if (res.ok) {
-          const freshData = await res.json();
-          setUserData({
-            email: freshData.email,
-            fullName: freshData.fullName || parsedUser.name || '',
-            phone: freshData.phone || '',
-            country: freshData.country || '',
-            city: freshData.city || '',
-            address: freshData.address || '',
-            createdAt: freshData.createdAt || new Date().toISOString()
-          });
-        }
       } catch (error) {
-        console.error(error);
+        console.error("Profile load error:", error);
       } finally {
         setIsLoading(false);
       }
@@ -107,59 +101,49 @@ function ProfileContent() {
     if (activeTab === 'orders' && userData.email) {
       const fetchOrders = async () => {
         try {
-          const res = await fetch('/api/order/my-orders', { 
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: userData.email }),
-          });
-          if (res.ok) {
-            const data = await res.json();
-            setOrders(data);
-          }
+          const data = await OrderService.getMyOrders(userData.email);
+          setOrders(data);
         } catch (error) {
-          console.error(error);
+          console.error("Orders load error:", error);
         }
       };
       fetchOrders();
     }
   }, [activeTab, userData.email]);
 
-  // 3. ЗБЕРЕЖЕННЯ
+  // 3. ЗБЕРЕЖЕННЯ 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setNotification(null);
     setIsSaving(true);
-
+    
     try {
-      const res = await fetch('/api/user/update', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userData),
-      });
-
-      if (res.ok) {
-        const updated = await res.json();
-        const localData = JSON.parse(localStorage.getItem('user') || '{}');
-        localStorage.setItem('user', JSON.stringify({ ...localData, name: updated.fullName }));
-        
-        setNotification({ type: 'success', message: 'Дані збережено успішно!' });
-        setTimeout(() => setNotification(null), 3000);
-      } else {
-        throw new Error();
-      }
-    } catch (err) {
-      setNotification({ type: 'error', message: 'Помилка збереження' });
+      const updated = await UserService.updateProfile(userData);
+      
+      const localData = JSON.parse(localStorage.getItem('user') || '{}');
+      localStorage.setItem('user', JSON.stringify({ ...localData, name: updated.fullName }));
+      
+      window.dispatchEvent(new Event('storage')); 
+      
+      setNotification({ type: 'success', message: 'Дані збережено успішно!' });
+      setTimeout(() => setNotification(null), 3000);
+    } catch (err: any) {
+      setNotification({ type: 'error', message: err.message || 'Помилка збереження' });
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleLogout = () => {
-    if(confirm('Вийти з акаунту?')) {
-      localStorage.removeItem('user');
-      window.location.href = '/';
+    if (confirm('Ви впевнені, що хочете вийти з акаунту?')) {
+    Cookies.remove('token', { path: '/' });
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('userName');
+    window.location.href = '/';
     }
   };
+
 
   const getStatusLabel = (status: string) => {
     const map: Record<string, string> = {
@@ -193,15 +177,15 @@ function ProfileContent() {
 
         <div className="flex flex-col lg:flex-row gap-8">
           
-          {/* === ЛІВИЙ САЙДБАР === */}
+          {/* ЛІВИЙ САЙДБАР */}
           <aside className="w-full lg:w-72 flex-shrink-0">
             <div className="bg-white rounded-2xl shadow-sm overflow-hidden sticky top-24 border border-gray-100">
               <div className="p-8 flex flex-col items-center bg-slate-900 text-white">
                 <div className="w-20 h-20 rounded-full bg-blue-600 flex items-center justify-center text-3xl font-bold mb-4 border-4 border-slate-700">
                   {userData.fullName ? userData.fullName[0].toUpperCase() : '👤'}
                 </div>
-                <h3 className="font-bold text-center leading-tight">{userData.fullName || 'Гість'}</h3>
-                <p className="text-sm text-gray-400 mt-1">{userData.email}</p>
+                <h3 className="font-bold text-center leading-tight">{userData.fullName || 'Користувач'}</h3>
+                <p className="text-slate-900 text-sm text-gray-400 mt-1">{userData.email}</p>
               </div>
               
               <nav className="p-3 space-y-1">
@@ -225,7 +209,7 @@ function ProfileContent() {
             </div>
           </aside>
 
-          {/* === ПРАВА ЧАСТИНА === */}
+          {/* ПРАВА ЧАСТИНА */}
           <div className="flex-grow">
             
             {/* 1. РЕДАГУВАННЯ */}
@@ -235,25 +219,54 @@ function ProfileContent() {
                 <form onSubmit={handleSave} className="space-y-6">
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-2">ПІБ</label>
-                    <input type="text" value={userData.fullName} onChange={(e) => setUserData({...userData, fullName: e.target.value})} className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl outline-none focus:border-blue-500 transition" placeholder="Ваше ім'я" />
+                    <input 
+                      type="text" 
+                      value={userData.fullName} 
+                      onChange={(e) => setUserData({...userData, fullName: e.target.value})} 
+                      className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-slate-900 placeholder:text-gray-500 outline-none focus:border-blue-500 transition" 
+                      placeholder="Ваше ім'я" 
+                    />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Телефон</label>
-                        <input type="text" value={userData.phone} onChange={(e) => setUserData({...userData, phone: e.target.value})} className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl outline-none focus:border-blue-500 transition" placeholder="+380..." />
+                        <input 
+                          type="text" 
+                          value={userData.phone} 
+                          onChange={(e) => setUserData({...userData, phone: e.target.value})} 
+                          className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-slate-900 placeholder:text-gray-500 outline-none focus:border-blue-500 transition" 
+                          placeholder="+380..." 
+                        />
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Email</label>
-                        <input type="text" value={userData.email} disabled className="w-full bg-gray-100 border border-gray-200 p-3 rounded-xl text-gray-400 cursor-not-allowed" />
+                        <input 
+                          type="text" 
+                          value={userData.email} 
+                          disabled 
+                          className="w-full bg-gray-100 border border-gray-200 p-3 rounded-xl text-slate-900 font-medium cursor-not-allowed" 
+                        />
                       </div>
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Місто</label>
-                    <input type="text" value={userData.city} onChange={(e) => setUserData({...userData, city: e.target.value})} className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl outline-none focus:border-blue-500 transition" placeholder="Київ" />
+                    <input 
+                      type="text" 
+                      value={userData.city} 
+                      onChange={(e) => setUserData({...userData, city: e.target.value})} 
+                      className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-slate-900 placeholder:text-gray-500 outline-none focus:border-blue-500 transition" 
+                      placeholder="Київ" 
+                    />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Відділення / Адреса</label>
-                    <input type="text" value={userData.address} onChange={(e) => setUserData({...userData, address: e.target.value})} className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl outline-none focus:border-blue-500 transition" placeholder="Відділення №..." />
+                    <input 
+                      type="text" 
+                      value={userData.address} 
+                      onChange={(e) => setUserData({...userData, address: e.target.value})} 
+                      className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-slate-900 placeholder:text-gray-500 outline-none focus:border-blue-500 transition" 
+                      placeholder="Відділення №..." 
+                    />
                   </div>
                   <button type="submit" disabled={isSaving} className="px-8 py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition shadow-lg active:scale-95 disabled:opacity-70">
                     {isSaving ? 'Збереження...' : 'Зберегти зміни'}
@@ -341,7 +354,7 @@ function ProfileContent() {
               </div>
             )}
 
-            {/* 3. СПИСОК БАЖАНЬ (CUSTOM DESIGN) */}
+            {/* 3. СПИСОК БАЖАНЬ */}
             {activeTab === 'favorites' && (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 animate-fade-in-up">
                 <h2 className="text-2xl font-bold text-slate-900 mb-6">Список бажань ❤️</h2>
@@ -349,11 +362,7 @@ function ProfileContent() {
                 {wishlistItems.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {wishlistItems.map((product) => (
-                      
-                      // 👇 ЗАМІСТЬ ProductCard ВИКОРИСТОВУЄМО СВІЙ HTML
                       <div key={product.id} className="group relative bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-lg transition-all">
-                        
-                        {/* 1. ФОТО БЕЗ СЕРДЕЧКА */}
                         <Link href={`/product/${product.id}`} className="block aspect-[3/4] overflow-hidden bg-gray-100">
                            {product.imageUrl ? (
                              <img 
@@ -366,7 +375,6 @@ function ProfileContent() {
                            )}
                         </Link>
 
-                        {/* 2. ІНФО + КНОПКА ВИДАЛИТИ */}
                         <div className="p-4">
                            <Link href={`/product/${product.id}`} className="block">
                              <h3 className="font-bold text-slate-900 text-sm mb-1 truncate hover:text-blue-600 transition">{product.title}</h3>
@@ -374,8 +382,6 @@ function ProfileContent() {
                            
                            <div className="flex justify-between items-center mt-2">
                               <span className="font-black text-slate-900 text-lg">{product.price} ₴</span>
-                              
-                              {/* КНОПКА ВИДАЛИТИ */}
                               <button 
                                 onClick={() => removeFromWishlist(product.id)}
                                 className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-50 text-gray-400 hover:bg-red-100 hover:text-red-500 transition"
@@ -390,7 +396,6 @@ function ProfileContent() {
                         </div>
 
                       </div>
-
                     ))}
                   </div>
                 ) : (
@@ -412,7 +417,6 @@ function ProfileContent() {
   );
 }
 
-// 👇 4. ГОЛОВНИЙ КОМПОНЕНТ-ОБГОРТКА
 export default function ProfilePage() {
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-gray-500">Завантаження...</div>}>

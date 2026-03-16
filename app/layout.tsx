@@ -4,8 +4,9 @@ import './globals.css';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { CartProvider } from '@/context/CartContext';
-import { WishlistProvider } from '@/context/WishlistContext'; // <--- 1. Додали імпорт
+import { WishlistProvider } from '@/context/WishlistContext';
 import CartModal from '@/components/CartModal';
+import TopProgressBar from '@/components/TopProgressBar';
 
 const inter = Inter({ subsets: ['latin', 'cyrillic'] });
 
@@ -23,13 +24,14 @@ export default function RootLayout({
     <html lang="uk" suppressHydrationWarning={true}>
       <body className={inter.className} suppressHydrationWarning={true}>
         
-        {/* Обгортаємо весь сайт в Провайдер Кошика */}
         <CartProvider>
-          {/* 👇 2. Обгортаємо в Провайдер Бажаного (всередині кошика) */}
           <WishlistProvider>
-            
+          
+
+            <TopProgressBar />
+
             <Header />
-            <CartModal /> {/* Модальне вікно завжди тут, але сховане */}
+            <CartModal /> 
             
             {children}
 

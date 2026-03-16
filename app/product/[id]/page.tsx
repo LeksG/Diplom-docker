@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import ProductClient from '@/components/ProductClient';
+import ProductReviews from '@/components/ProductReviews';
 import { notFound } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
@@ -10,26 +11,59 @@ interface Props {
 
 async function getProductData(idString: string) {
   const id = Number(idString);
-  
   if (isNaN(id)) return null;
 
   try {
-    // 2. Отримуємо головний товар
+    // 1. Спочатку отримуємо продукт БЕЗ відгуків 
     const product = await prisma.product.findUnique({
       where: { id: id },
       include: { 
         category: true,
         variants: true,
-        
-        // 👇👇👇 ОСЬ ЦЕ БУЛО ПРОПУЩЕНО! 👇👇👇
-        images: true 
-        // 👆 Без цього рядка галерея не завантажується!
+        images: true,
       },
     });
 
     if (!product) return null;
 
-    // 3. Отримуємо схожі товари
+    // 2. Окремо отримуємо ВСІ відгуки для цього товару 
+    const flatReviews = await prisma.review.findMany({
+      where: { productId: id },
+      include: { 
+        user: { select: { fullName: true } } 
+      },
+      orderBy: { createdAt: 'asc' } 
+    });
+
+    // 3. Функція для побудови дерева 
+    const buildReviewTree = (reviews: any[]) => {
+      const map = new Map();
+      const roots: any[] = [];
+
+      reviews.forEach(review => {
+        map.set(review.id, { ...review, replies: [] });
+      });
+
+      reviews.forEach(review => {
+        const node = map.get(review.id);
+        if (review.parentId) {
+          const parent = map.get(review.parentId);
+          if (parent) {
+            parent.replies.push(node);
+          } else {
+             roots.push(node);
+          }
+        } else {
+          roots.push(node);
+        }
+      });
+
+      return roots.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    };
+
+    const reviewTree = buildReviewTree(flatReviews);
+
+    // 4. Схожі товари
     const relatedProducts = await prisma.product.findMany({
       where: {
         categoryId: product.categoryId,
@@ -37,14 +71,13 @@ async function getProductData(idString: string) {
       },
       take: 4,
       orderBy: { createdAt: 'desc' },
-      include: { category: true } // Спростив для надійності
+      include: { category: true }
     });
 
-    // 4. Формуємо дані
+    // 5. Формуємо фінальні дані
     const availableSizes = [
       ...new Set(product.variants.filter((v) => v.stock > 0).map((v) => v.size))
     ];
-    
     const finalAvailableSizes = availableSizes.length > 0 ? availableSizes : (product.availableSizes || []);
 
     return {
@@ -55,8 +88,8 @@ async function getProductData(idString: string) {
         availableSizes: finalAvailableSizes,
         sizes: product.sizes || [],
         colors: product.colors || [],
-        // Переконуємось, що images передається (навіть якщо пустий масив)
-        images: product.images || [] 
+        images: product.images || [],
+        reviews: reviewTree 
       },
       relatedProducts: relatedProducts.map(p => ({
         id: p.id,
@@ -90,10 +123,19 @@ export default async function ProductPage(props: Props) {
 
   return (
     <main className="bg-white min-h-screen pb-20">
+       {/* Основний клієнтський компонент (фото, вибір розміру, купити) */}
        <ProductClient 
           product={data.mainProduct} 
           relatedProducts={data.relatedProducts} 
        />
+
+       {/* 3. БЛОК ВІДГУКІВ */}
+       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <ProductReviews 
+            productId={data.mainProduct.id} 
+            reviews={data.mainProduct.reviews} 
+          />
+       </div>
     </main>
   );
 }

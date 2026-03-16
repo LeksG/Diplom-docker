@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import WishlistButton from '@/components/WishlistButton';
 
-// Інтерфейс
+
 interface ProductProps {
   id: number;
   title: string;
@@ -42,7 +42,7 @@ const colorMap: Record<string, string> = {
   'коричневий': '#5D4037', 'brown': '#5D4037',
 };
 
-// --- МОДАЛКА ---
+
 const SizeChartModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   if (!isOpen) return null;
   return (
@@ -69,7 +69,7 @@ const SizeChartModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
   );
 };
 
-// --- СЛАЙДЕР ---
+// СЛАЙДЕР 
 const ImageSlider = ({ images, title, isOutOfStock, discountPercent }: { images: string[], title: string, isOutOfStock: boolean, discountPercent: number | null }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
 
@@ -122,7 +122,7 @@ const ImageSlider = ({ images, title, isOutOfStock, discountPercent }: { images:
   );
 };
 
-// --- ГОЛОВНИЙ КОМПОНЕНТ ---
+// ГОЛОВНИЙ КОМПОНЕНТ 
 export default function ProductClient({ product, relatedProducts = [] }: { product: ProductProps; relatedProducts?: RelatedProduct[] }) {
   const { addToCart } = useCart();
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
@@ -135,32 +135,23 @@ export default function ProductClient({ product, relatedProducts = [] }: { produ
     ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)
     : null;
 
-  // 👇 НОВА ЛОГІКА "ВІЧНОГО СЛАЙДЕРА"
   const productImages = useMemo(() => {
     const gallery = product.images || [];
     const mainImage = product.imageUrl ? [product.imageUrl] : [];
 
-    // 1. Збираємо АБСОЛЮТНО ВСІ доступні фото в один список
     const allImages = [...mainImage, ...gallery.map(img => img.url)];
-    // Видаляємо дублікати (якщо головне фото є і в галереї)
     const uniqueImages = [...new Set(allImages)];
 
-    // 2. Якщо колір не обраний — показуємо все підряд
     if (!selectedColor) return uniqueImages;
 
-    // 3. Якщо колір обраний — СОРТУЄМО, а не фільтруємо
     const normalizedColor = selectedColor.toLowerCase();
     
-    // Знаходимо фото, які точно підходять кольору
     const specificImages = gallery
       .filter(img => img.color && img.color.toLowerCase() === normalizedColor)
       .map(img => img.url);
 
-    // Знаходимо всі інші фото
     const otherImages = uniqueImages.filter(url => !specificImages.includes(url));
 
-    // 4. ПОВЕРТАЄМО ВСЕ РАЗОМ: Спочатку потрібний колір, потім решта
-    // Це гарантує, що слайдер ніколи не буде пустим (якщо є хоч 1 фото)
     return [...specificImages, ...otherImages];
 
   }, [product.images, product.imageUrl, selectedColor]);
@@ -203,16 +194,23 @@ export default function ProductClient({ product, relatedProducts = [] }: { produ
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-20">
         
-        {/* ЛІВА ЧАСТИНА (СЛАЙДЕР) */}
-        <div className="space-y-4 relative">
-          <ImageSlider 
-            images={productImages} 
-            title={product.title} 
-            isOutOfStock={isOutOfStock} 
-            discountPercent={discountPercent} 
-          />
-          <div className="absolute top-4 right-4 z-30">
-             <WishlistButton product={product} className="w-12 h-12 bg-white/90 backdrop-blur shadow-md hover:bg-white text-slate-900" />
+        {/* ЛІВА ЧАСТИНА (СЛАЙДЕР ТА ОПИС) */}
+        <div className="space-y-8">
+          <div className="space-y-4 relative">
+            <ImageSlider 
+              images={productImages} 
+              title={product.title} 
+              isOutOfStock={isOutOfStock} 
+              discountPercent={discountPercent} 
+            />  
+          </div>
+
+          {/* ОПИС ТОВАРУ  */}
+          <div className="border-t border-gray-100 pt-6">
+              <h3 className="font-bold text-slate-900 mb-3 text-lg">Характеристика</h3>
+              <div className="text-gray-600 leading-relaxed text-md whitespace-pre-wrap">
+                  {product.description || "Опис товару відсутній."}
+              </div>
           </div>
         </div>
 
@@ -226,7 +224,7 @@ export default function ProductClient({ product, relatedProducts = [] }: { produ
                  <span className="inline-flex items-center gap-1.5 bg-red-50 text-red-600 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wide">❌ Розпродано</span>
              ) : (
                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wide ${isLowStock ? 'bg-yellow-50 text-yellow-700' : 'bg-green-50 text-green-700'}`}>
-                    {isLowStock ? '⚠️ Закінчується' : '✅ В наявності'}
+                    {isLowStock ? 'Закінчується' : 'В наявності'}
                  </span>
              )}
           </div>
@@ -297,15 +295,8 @@ export default function ProductClient({ product, relatedProducts = [] }: { produ
             <WishlistButton product={product} className="w-16 h-auto rounded-xl border-2 border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-200 hover:bg-red-50 flex items-center justify-center" />
           </div>
 
-          {/* ІНФОРМАЦІЯ */}
+          {/* ІНФОРМАЦІЯ ПРО ДОСТАВКУ */}
           <div className="space-y-8">
-            <div className="border-t border-gray-100 pt-6">
-                <h3 className="font-bold text-slate-900 mb-3 text-lg">Опис товару</h3>
-                <div className="text-gray-600 leading-relaxed text-sm space-y-2">
-                    {product.description || "Опис товару відсутній."}
-                </div>
-            </div>
-            
             <div className="border-t border-gray-100 pt-6">
                 <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2 text-lg">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-blue-600">

@@ -13,12 +13,12 @@ export interface CartItem {
   quantity: number;
 }
 
-// Тип контексту (Додаємо сюди clearCart)
+// Тип контексту 
 interface CartContextType {
   items: CartItem[];
   addToCart: (item: CartItem) => void;
   removeFromCart: (id: number, size: string, color?: string) => void;
-  clearCart: () => void; // <--- ОСЬ ВОНА
+  clearCart: () => void; 
   isCartOpen: boolean;
   toggleCart: () => void;
   cartCount: number;
@@ -69,7 +69,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems((prev) => prev.filter((i) => !(i.id === id && i.size === size && i.color === color)));
   };
 
-  // === НОВА ФУНКЦІЯ ===
+  
   const clearCart = () => {
     setItems([]); 
     localStorage.removeItem('cart');

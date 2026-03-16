@@ -10,13 +10,11 @@ export default function CartModal() {
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
-      {/* Затемнення фону */}
       <div 
         className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity" 
         onClick={toggleCart}
       ></div>
 
-      {/* Сама панель кошика */}
       <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-slide-in">
         
         {/* Шапка */}
@@ -69,7 +67,7 @@ export default function CartModal() {
             </div>
             <Link 
               href="/checkout" 
-              onClick={toggleCart} // Закриваємо кошик при переході
+              onClick={toggleCart} 
               className="block w-full py-4 bg-slate-900 text-white text-center font-bold rounded-xl hover:bg-slate-800 transition"
             >
               ОФОРМИТИ ЗАМОВЛЕННЯ

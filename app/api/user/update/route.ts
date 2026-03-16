@@ -9,7 +9,7 @@ export async function PATCH(req: Request) {
     const body = await req.json();
     const { email, fullName, phone, country, city, address } = body;
 
-    // Оновлюємо користувача за його email
+    
     const updatedUser = await prisma.user.update({
       where: { email },
       data: {

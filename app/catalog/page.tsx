@@ -11,10 +11,13 @@ async function getData() {
       orderBy: { createdAt: 'desc' },
     });
 
-    // === ПЕРЕТВОРЮЄМО DECIMAL В NUMBER ===
+    // ПЕРЕТВОРЮЄМО DECIMAL В NUMBER 
     const products = rawProducts.map((product) => ({
       ...product,
       price: Number(product.price), // Конвертуємо явно
+      
+      // Конвертуємо стару ціну, якщо вона є
+      oldPrice: product.oldPrice ? Number(product.oldPrice) : null,
     }));
 
     const categories = await prisma.category.findMany();
@@ -40,7 +43,7 @@ export default async function CatalogPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-10">
-        {/* Передаємо вже оброблені продукти (де price - це число) */}
+        {/* Передаємо вже оброблені продукти */}
         <CatalogClient initialProducts={products} categories={categories} />
       </div>
     </main>

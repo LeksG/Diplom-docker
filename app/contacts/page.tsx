@@ -2,20 +2,34 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { ContactService } from '@/services/api';
 
 export default function ContactsPage() {
-  // Стейт для форми
-  const [formStatus, setFormStatus] = useState<'idle' | 'loading' | 'success'>('idle');
+  const [formStatus, setFormStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [formData, setFormData] = useState({
+    name: '',
+    contactInfo: '',
+    message: ''
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormStatus('loading');
-    
-    // Імітація відправки (тут потім можна підключити реальне API)
-    setTimeout(() => {
-      setFormStatus('success');
-    }, 1500);
-  };
+
+   try {
+    await ContactService.sendFeedback(formData);
+    setFormStatus('success');
+    setFormData({ name: '', contactInfo: '', message: '' }); 
+  } catch (error: any) {
+    console.error('Помилка відправки:', error);
+    setFormStatus('error');
+    alert(error.message || 'Помилка при відправці повідомлення. Спробуйте пізніше.');
+  }
+};
 
   return (
     <main className="min-h-screen bg-gray-50 pb-20">
@@ -26,9 +40,6 @@ export default function ContactsPage() {
           <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tight mb-4">
             Контакти
           </h1>
-          <p className="text-gray-400 text-lg">
-            Ми завжди раді допомогти. Обирайте зручний спосіб зв'язку.
-          </p>
         </div>
       </section>
 
@@ -54,7 +65,7 @@ export default function ContactsPage() {
                   <div>
                     <p className="text-sm text-gray-500 font-bold uppercase mb-1">Телефон / Viber / Telegram</p>
                     <a href="tel:+380999999999" className="text-xl font-black text-slate-900 hover:text-blue-600 transition block">
-                      +380 99 999 99 99
+                      +380 999 229 130
                     </a>
                     <p className="text-sm text-gray-400 mt-1">Пн-Нд: 10:00 - 20:00</p>
                   </div>
@@ -91,18 +102,6 @@ export default function ContactsPage() {
                 </div>
               </div>
             </div>
-
-            {/* Карта (Імітація) */}
-            <div className="bg-slate-200 rounded-3xl h-64 w-full relative overflow-hidden shadow-inner group">
-                <div className="absolute inset-0 flex items-center justify-center text-slate-400 font-bold text-xl bg-slate-100">
-                    📍 Тут могла бути Google Мапа
-                </div>
-                {/* Заглушка кнопки */}
-                <a href="https://maps.google.com" target="_blank" className="absolute bottom-4 right-4 bg-white px-4 py-2 rounded-lg shadow-md text-sm font-bold text-slate-900 hover:bg-slate-900 hover:text-white transition">
-                    Відкрити навігатор
-                </a>
-            </div>
-
           </div>
 
           {/* === ПРАВА КОЛОНКА: ФОРМА === */}
@@ -114,7 +113,7 @@ export default function ContactsPage() {
                   ✅
                 </div>
                 <h3 className="text-2xl font-black text-slate-900 mb-2">Повідомлення надіслано!</h3>
-                <p className="text-gray-500 mb-8 max-w-xs">Дякуємо. Менеджер зв'яжеться з вами найближчим часом.</p>
+                <p className="text-gray-500 mb-8 max-w-xs">Дякуємо. Ми зв'яжемося з вами найближчим часом.</p>
                 <button onClick={() => setFormStatus('idle')} className="text-blue-600 font-bold hover:underline">
                   Надіслати ще одне
                 </button>
@@ -129,17 +128,38 @@ export default function ContactsPage() {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Ваше ім'я</label>
-                    <input required type="text" placeholder="Олександр" className="w-full bg-gray-50 border border-gray-200 p-4 rounded-xl outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition font-medium" />
+                    <input 
+                      required 
+                      type="text" 
+                      name="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      className="w-full bg-gray-50 border border-gray-200 p-4 rounded-xl outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition font-medium text-slate-900" 
+                    />
                   </div>
                   
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Телефон або Email</label>
-                    <input required type="text" placeholder="+380... або email@gmail.com" className="w-full bg-gray-50 border border-gray-200 p-4 rounded-xl outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition font-medium" />
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Email</label>
+                    <input 
+                      required 
+                      type="text" 
+                      name="contactInfo"
+                      value={formData.contactInfo}
+                      onChange={handleChange}
+                      className="w-full bg-gray-50 border border-gray-200 p-4 rounded-xl outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition font-medium text-slate-900" 
+                    />
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Повідомлення</label>
-                    <textarea required rows={4} placeholder="Я хочу запитати про..." className="w-full bg-gray-50 border border-gray-200 p-4 rounded-xl outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition font-medium resize-none"></textarea>
+                    <textarea 
+                      required 
+                      name="message"
+                      value={formData.message}
+                      onChange={handleChange}
+                      rows={4} 
+                      className="w-full bg-gray-50 border border-gray-200 p-4 rounded-xl outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition font-medium text-slate-900 resize-none"
+                    ></textarea>
                   </div>
                 </div>
 

@@ -3,8 +3,8 @@
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-// 👇 Імпортуємо компонент завантаження (переконайтесь, що шлях правильний)
 import ImageUploader from '@/components/ImageUploader';
+import { ProductService, CategoryService } from '@/services/api';
 
 interface Category {
   id: number;
@@ -19,7 +19,6 @@ interface VariantItem {
   stock: number;
 }
 
-// 👇 Інтерфейс для картинки
 interface ProductImageItem {
   url: string;
   color: string | null;
@@ -33,22 +32,22 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // === ДАНІ ТОВАРУ ===
+  //  ДАНІ ТОВАРУ 
   const [title, setTitle] = useState('');
   const [price, setPrice] = useState('');
   const [oldPrice, setOldPrice] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [description, setDescription] = useState('');
   
-  // 👇 СТЕЙТ ДЛЯ ГАЛЕРЕЇ
+  // СТЕЙТ ДЛЯ ГАЛЕРЕЇ
   const [images, setImages] = useState<ProductImageItem[]>([]);
 
-  // === КАТЕГОРІЇ ===
+  // КАТЕГОРІЇ 
   const [gender, setGender] = useState('men');
   const [type, setType] = useState('hoodies');
   const [dbCategories, setDbCategories] = useState<Category[]>([]);
 
-  // === ВАРІАНТИ (SKU) ===
+  // ВАРІАНТИ 
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [variants, setVariants] = useState<VariantItem[]>([]);
@@ -79,12 +78,10 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const catsRes = await fetch('/api/categories');
-        if (catsRes.ok) setDbCategories(await catsRes.json());
+        const catsData = await CategoryService.getAll();
+        setDbCategories(catsData);
 
-        const prodRes = await fetch(`/api/products/${productId}`);
-        if (!prodRes.ok) throw new Error('Product not found');
-        const product = await prodRes.json();
+        const product = await ProductService.getById(productId);
 
         setTitle(product.title);
         setPrice(product.price);
@@ -92,12 +89,11 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         setImageUrl(product.imageUrl || '');
         setDescription(product.description || '');
 
-        // 👇 ЗАВАНТАЖУЄМО ГАЛЕРЕЮ З БАЗИ В СТЕЙТ
         if (product.images && Array.isArray(product.images)) {
             setImages(product.images);
         }
 
-        // === ВІДНОВЛЕННЯ ВАРІАНТІВ ===
+        //ВІДНОВЛЕННЯ ВАРІАНТІВ 
         if (product.variants && product.variants.length > 0) {
             setVariants(product.variants.map((v: any) => ({
                 id: v.id,
@@ -163,56 +159,62 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     setVariants(newVariantsList);
   };
 
-  const updateVariantStock = (index: number, newStock: string) => {
+  const updateMatrixStock = (color: string, size: string, newStock: string) => {
     const updated = [...variants];
-    updated[index].stock = Number(newStock);
-    setVariants(updated);
+    const index = updated.findIndex(v => v.color === color && v.size === size);
+    if (index !== -1) {
+      updated[index].stock = Number(newStock);
+      setVariants(updated);
+    }
   };
 
-  // Збереження (PATCH)
+  const getColorHex = (colorName: string) => {
+    const map: Record<string, string> = {
+        'білий': '#ffffff', 'чорний': '#000000', 'сірий': '#9ca3af', 'бежевий': '#f5f5dc',
+        'синій': '#2563eb', 'червоний': '#dc2626', 'зелений': '#16a34a', 'жовтий': '#eab308', 'коричневий': '#78350f'
+    };
+    return map[colorName.toLowerCase()] || '#e5e7eb';
+  };
+
+  // 3. ЗАМІНИЛИ ФУНКЦІЮ ЗБЕРЕЖЕННЯ (PATCH)
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!foundCategory) return alert("Помилка категорії");
     setSaving(true);
 
-    // Якщо головне фото не задане вручну, беремо перше з галереї як "обкладинку"
     const mainImage = imageUrl || (images.length > 0 ? images[0].url : "");
 
     try {
-      const res = await fetch(`/api/products/${productId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title,
-          description,
-          price: parseFloat(price),
-          oldPrice: oldPrice ? parseFloat(oldPrice) : null,
-          imageUrl: mainImage,
-          categoryId: foundCategory.id,
-          variants: variants,
-          images: images // 👇 ВІДПРАВЛЯЄМО МАСИВ КАРТИНОК НА ВАШ ГОТОВИЙ API
-        }),
+      //  Викликаємо сервіс 
+      await ProductService.update(productId, {
+        title,
+        description,
+        price: parseFloat(price),
+        oldPrice: oldPrice ? parseFloat(oldPrice) : null,
+        imageUrl: mainImage,
+        categoryId: foundCategory.id,
+        variants: variants,
+        images: images 
       });
 
-      if (res.ok) {
-        alert('✅ Товар оновлено!');
-        router.push('/admin');
-        router.refresh();
-      } else {
-        const err = await res.json();
-        alert(`Помилка: ${err.error}`);
-      }
-    } catch (e) {
-      alert('Помилка сервера');
+      alert(' Товар оновлено!');
+      router.push('/admin');
+      router.refresh();
+      
+    } catch (e: any) {
+      alert(`Помилка сервера: ${e.message}`);
     } finally {
       setSaving(false);
     }
   };
 
-  const inputStyle = "w-full p-3 border rounded-xl bg-gray-50 text-slate-900 font-bold focus:ring-2 ring-blue-500 outline-none";
-  const labelStyle = "block text-xs font-black text-black uppercase mb-2";
+  const inputStyle = "w-full p-3 border border-gray-300 rounded-xl bg-white text-slate-900 font-bold focus:ring-2 ring-slate-900 outline-none";
+  const labelStyle = "block text-xs font-black text-slate-900 uppercase mb-2";
 
-  if (loading) return <div className="p-10 text-center font-bold">Завантаження...</div>;
+  if (loading) return <div className="p-10 text-center font-bold text-slate-900">Завантаження...</div>;
+
+  const activeColors = [...new Set(variants.map(v => v.color))];
+  const activeSizes = [...new Set(variants.map(v => v.size))];
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -222,16 +224,26 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
            <Link href="/admin" className="text-gray-500 hover:text-red-500 font-bold">Скасувати</Link>
         </div>
 
-        <form onSubmit={handleUpdate} className="bg-white p-8 rounded-2xl shadow-sm border space-y-8">
+        <form onSubmit={handleUpdate} className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 space-y-8">
           
           {/* ОСНОВНА ІНФО */}
           <div className="space-y-6">
              <div className="grid md:grid-cols-2 gap-4">
-                 <div className="flex gap-2 p-1 bg-gray-100 rounded-xl">
-                    <button type="button" onClick={() => setGender('men')} className={`flex-1 rounded-lg font-black text-xs uppercase ${gender === 'men' ? 'bg-slate-900 text-white' : 'text-gray-500'}`}>Чол</button>
-                    <button type="button" onClick={() => setGender('women')} className={`flex-1 rounded-lg font-black text-xs uppercase ${gender === 'women' ? 'bg-pink-600 text-white' : 'text-gray-500'}`}>Жін</button>
+                 <div className="flex gap-2 p-1 bg-gray-100 rounded-xl border border-gray-200">
+                    <button type="button" onClick={() => setGender('men')} 
+                        className={`flex-1 rounded-lg font-black text-xs uppercase transition-all ${gender === 'men' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-900 hover:bg-gray-200'}`}>
+                        Чол
+                    </button>
+                    <button type="button" onClick={() => setGender('women')} 
+                        className={`flex-1 rounded-lg font-black text-xs uppercase transition-all ${gender === 'women' ? 'bg-pink-600 text-white shadow-md' : 'text-slate-900 hover:bg-gray-200'}`}>
+                        Жін
+                    </button>
                  </div>
-                 <select className="p-3 border rounded-xl bg-white font-bold outline-none" value={type} onChange={e => setType(e.target.value)}>
+                 <select 
+                    className="p-3 border border-gray-300 rounded-xl bg-white text-slate-900 font-bold outline-none focus:ring-2 ring-slate-900" 
+                    value={type} 
+                    onChange={e => setType(e.target.value)}
+                 >
                     {availableTypes.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                  </select>
              </div>
@@ -248,12 +260,12 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                    </div>
                    <div>
                       <label className="block text-xs font-black text-red-500 uppercase mb-2">Знижка (стара ціна)</label>
-                      <input type="number" className={`${inputStyle} border-red-100`} value={oldPrice} onChange={e => setOldPrice(e.target.value)} />
+                      <input type="number" className={`${inputStyle} border-red-200 text-red-600 focus:ring-red-200`} value={oldPrice} onChange={e => setOldPrice(e.target.value)} />
                    </div>
                 </div>
              </div>
 
-             {/* 👇 ТУТ ДОДАНО БЛОК ДЛЯ ФОТО */}
+             {/* БЛОК ДЛЯ ФОТО */}
              <div>
                 <label className={labelStyle}>Фотогалерея (Завантажте та оберіть колір)</label>
                 <ImageUploader 
@@ -278,11 +290,11 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           {/* ВАРІАНТИ */}
           <div className="space-y-6">
             <div className="flex justify-between items-end">
-                <h2 className="text-xl font-black uppercase">📦 Склад та Варіанти</h2>
+                <h2 className="text-xl font-black uppercase text-slate-900">📦 Склад та Варіанти</h2>
                 <span className="text-xs text-gray-500 font-medium">Оберіть нові кольори/розміри та натисніть "Оновити таблицю"</span>
             </div>
             
-            <div className="bg-blue-50/50 p-6 rounded-xl border border-blue-100 space-y-6">
+            <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 space-y-6">
                 
                 {/* 1. РОЗМІРИ */}
                 <div>
@@ -290,7 +302,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                     <div className="flex gap-2 flex-wrap">
                         {availableSizes.map(size => (
                         <button key={size} type="button" onClick={() => toggleSize(size)}
-                            className={`px-3 py-1.5 rounded-lg font-bold border-2 text-sm transition-all ${selectedSizes.includes(size) ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-900 border-gray-200'}`}>
+                            className={`px-3 py-1.5 rounded-lg font-bold border-2 text-sm transition-all ${selectedSizes.includes(size) ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-900 border-gray-300 hover:border-slate-900'}`}>
                             {size}
                         </button>
                         ))}
@@ -303,7 +315,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                     <div className="flex gap-2 flex-wrap">
                         {availableColors.map(color => (
                         <button key={color} type="button" onClick={() => toggleColor(color)}
-                            className={`px-3 py-1.5 rounded-lg font-bold border-2 text-sm capitalize transition-all ${selectedColors.includes(color) ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-900 border-gray-200'}`}>
+                            className={`px-3 py-1.5 rounded-lg font-bold border-2 text-sm capitalize transition-all ${selectedColors.includes(color) ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-900 border-gray-300 hover:border-slate-900'}`}>
                             {color}
                         </button>
                         ))}
@@ -311,56 +323,59 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                 </div>
 
                 <button type="button" onClick={regenerateVariants} 
-                    className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition flex items-center justify-center gap-2">
+                    className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition flex items-center justify-center gap-2 shadow-sm">
                     🔄 Оновити таблицю
                 </button>
             </div>
 
+            {/* ВІЗУАЛ ВАРІАНТІВ  */}
             {variants.length > 0 ? (
-                <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                    <table className="w-full text-left bg-white">
-                        <thead className="bg-gray-100 text-xs uppercase font-black text-gray-500 border-b">
-                            <tr>
-                                <th className="p-4 pl-6">Варіант</th>
-                                <th className="p-4">Кількість на складі</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                            {variants.map((v, idx) => (
-                                <tr key={`${v.color}-${v.size}`} className="hover:bg-gray-50 transition">
-                                    <td className="p-4 pl-6">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-6 h-6 rounded-full border shadow-sm" style={{backgroundColor: v.color === 'білий' ? '#fff' : v.color === 'чорний' ? '#000' : v.color === 'червоний' ? 'red' : v.color === 'синій' ? 'blue' : 'gray'}}></div>
-                                            <div>
-                                                <div className="font-black text-slate-900 text-sm capitalize">{v.color}</div>
-                                                <div className="text-xs text-gray-500 font-bold bg-gray-200 px-1.5 rounded inline-block">{v.size}</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="p-4">
-                                        <div className="flex items-center gap-2">
-                                            <input 
-                                                type="number" min="0" 
-                                                value={v.stock}
-                                                onChange={(e) => updateVariantStock(idx, e.target.value)}
-                                                className={`w-24 p-2 border rounded-lg font-bold text-center outline-none focus:ring-2 ${v.stock > 0 ? 'border-gray-300 text-slate-900 ring-slate-900' : 'border-red-300 text-red-600 bg-red-50 ring-red-200'}`}
+                <div className="space-y-3">
+                    {activeColors.map(color => (
+                        <div key={color} className="flex flex-col md:flex-row md:items-center gap-4 p-5 border border-gray-200 rounded-2xl bg-white shadow-sm hover:border-blue-300 transition-colors">
+                            
+                            {/* Ліва частина */}
+                            <div className="flex items-center gap-3 w-40 flex-shrink-0">
+                                <div className="w-6 h-6 rounded-full border border-gray-300 shadow-sm" style={{ backgroundColor: getColorHex(color) }}></div>
+                                <span className="font-black text-slate-900 text-sm capitalize">{color}</span>
+                            </div>
+
+                            {/* Права частина */}
+                            <div className="flex flex-wrap gap-3 items-center">
+                                {activeSizes.map(size => {
+                                    const variant = variants.find(v => v.color === color && v.size === size);
+                                    if (!variant) return null;
+
+                                    return (
+                                        <div key={size} className="flex items-center gap-2 bg-gray-50 p-2 rounded-xl border border-gray-100 shadow-sm">
+                                            <span className="text-xs font-black text-slate-900 bg-gray-200 px-2 py-1.5 rounded-lg w-10 text-center uppercase tracking-wider">{size}</span>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                value={variant.stock}
+                                                onChange={(e) => updateMatrixStock(color, size, e.target.value)}
+                                                className={`w-20 p-2 border rounded-lg font-bold text-center outline-none focus:ring-2 transition-all ${
+                                                    variant.stock > 0 
+                                                        ? 'border-gray-300 text-slate-900 focus:ring-slate-900' 
+                                                        : 'border-red-300 text-red-600 bg-red-50 focus:ring-red-300'
+                                                }`}
                                             />
                                             <span className="text-xs font-bold text-gray-400">шт.</span>
                                         </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ))}
                 </div>
             ) : (
-                <div className="text-center p-8 bg-gray-50 rounded-xl border border-dashed border-gray-300 text-gray-400">
-                    Варіанти відсутні.
+                <div className="text-center p-8 bg-gray-50 rounded-xl border border-dashed border-gray-300 text-gray-400 font-medium">
+                    Варіанти відсутні. Оберіть розміри та кольори вище і натисніть "Оновити таблицю".
                 </div>
             )}
           </div>
 
-          <button disabled={saving} className="w-full py-4 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition shadow-lg disabled:opacity-50 text-lg">
+          <button disabled={saving} className="w-full py-4 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition shadow-lg disabled:opacity-50 text-lg border-b-4 border-green-800 active:border-b-0 active:translate-y-1">
             {saving ? 'Збереження...' : '💾 Зберегти зміни'}
           </button>
         </form>

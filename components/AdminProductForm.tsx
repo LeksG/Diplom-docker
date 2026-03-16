@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import ImageUploader from '@/components/ImageUploader';
+import { ProductService } from '@/services/api';
 
-// 👇 1. Define the Category interface
+// 👇 1. Interfaces
 interface Category {
   id: number;
   name: string;
@@ -23,12 +25,10 @@ interface ProductImageItem {
   color: string | null;
 }
 
-// 👇 2. Define Props interface
 interface AdminProductFormProps {
   categories: Category[];
 }
 
-// 👇 3. Accept categories as a prop
 export default function AdminProductForm({ categories }: AdminProductFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -44,21 +44,19 @@ export default function AdminProductForm({ categories }: AdminProductFormProps) 
   // === UI LOGIC ===
   const [gender, setGender] = useState('men'); 
   const [type, setType] = useState('hoodies'); 
-
-  // 👇 4. We use the prop 'categories' directly. No need for dbCategories state or useEffect fetch.
   
   // === VARIANTS (SKU) ===
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [variants, setVariants] = useState<VariantItem[]>([]); 
 
-  // 5. Calculate current category ID based on the passed prop
+  // 5. Calculate category
   const targetSlug = `${gender}-${type}`;
   const foundCategory = categories.find(c => c.slug === targetSlug);
 
   // Lists
-  const availableSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
-  const availableColors = ['чорний', 'білий', 'сірий', 'бежевий', 'синій', 'червоний', 'зелений'];
+  const availableSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'];
+  const availableColors = ['чорний', 'білий', 'сірий', 'бежевий', 'синій', 'червоний', 'зелений', 'жовтий', 'коричневий'];
   
   const COMMON_TYPES = [
     { value: 'hoodies', label: 'Худі та Світшоти' },
@@ -105,8 +103,20 @@ export default function AdminProductForm({ categories }: AdminProductFormProps) 
     setVariants(newVariants);
   };
 
-  const updateVariantStock = (id: string, newStock: string) => {
-    setVariants(prev => prev.map(v => v.id === id ? { ...v, stock: Number(newStock) } : v));
+  // Оновлення кількості в матриці
+  const updateMatrixStock = (color: string, size: string, newStock: string) => {
+    setVariants(prev => prev.map(v => 
+      (v.color === color && v.size === size) ? { ...v, stock: Number(newStock) } : v
+    ));
+  };
+
+  // Допоміжна функція для кольору кружечка
+  const getColorHex = (colorName: string) => {
+    const map: Record<string, string> = {
+        'білий': '#ffffff', 'чорний': '#000000', 'сірий': '#9ca3af', 'бежевий': '#f5f5dc',
+        'синій': '#2563eb', 'червоний': '#dc2626', 'зелений': '#16a34a', 'жовтий': '#eab308', 'коричневий': '#78350f'
+    };
+    return map[colorName.toLowerCase()] || '#e5e7eb';
   };
 
   // SUBMIT
@@ -138,204 +148,206 @@ export default function AdminProductForm({ categories }: AdminProductFormProps) 
       images: images 
     };
 
-    try {
-      const res = await fetch('/api/products', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+    const token = localStorage.getItem('token');
 
-      if (res.ok) {
-        alert('✅ Товар успішно створено!');
+    try {
+      await ProductService.create(payload);
+
+        alert('Товар успішно створено!');
         router.push('/admin');
         router.refresh();
-      } else {
-        const errorData = await res.json();
-        alert(`❌ Помилка: ${errorData.error}`);
-      }
+    
     } catch (e) {
       console.error(e);
-      alert('❌ Помилка мережі.');
+      alert('Помилка мережі.');
     } finally {
       setLoading(false);
     }
   };
 
-  const inputStyle = "w-full p-3 border border-gray-300 rounded-xl bg-white text-black font-bold focus:ring-2 ring-black outline-none placeholder-gray-500";
-  const labelStyle = "block text-xs font-black text-black uppercase mb-2";
+  const inputStyle = "w-full p-3 border border-gray-300 rounded-xl bg-white text-slate-900 font-bold focus:ring-2 ring-slate-900 outline-none";
+  const labelStyle = "block text-xs font-black text-slate-900 uppercase mb-2";
+
+  // Витягуємо унікальні кольори та розміри для відмальовки матриці
+  const activeColors = [...new Set(variants.map(v => v.color))];
+  const activeSizes = [...new Set(variants.map(v => v.size))];
 
   return (
-    <div className="max-w-4xl mx-auto my-10">
-      <h1 className="text-3xl font-black mb-8">Додати новий товар</h1>
-      
-      <form onSubmit={handleSubmit} className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 space-y-8">
-      
-        {/* 1. MAIN INFO */}
-        <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-4 p-1 bg-gray-100 rounded-xl border border-gray-200">
-                <button type="button" onClick={() => setGender('men')}
-                className={`py-3 rounded-lg font-black text-sm uppercase transition-all ${gender === 'men' ? 'bg-black text-white shadow-md' : 'text-black hover:bg-gray-200'}`}>
-                👱‍♂️ Чоловікам
-                </button>
-                <button type="button" onClick={() => setGender('women')}
-                className={`py-3 rounded-lg font-black text-sm uppercase transition-all ${gender === 'women' ? 'bg-pink-600 text-white shadow-md' : 'text-black hover:bg-gray-200'}`}>
-                👩 Жінкам
-                </button>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                <label className={labelStyle}>Назва</label>
-                <input required type="text" className={inputStyle} value={title} onChange={e => setTitle(e.target.value)} placeholder="Напр: Літні шорти" />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-2">
-                    <div>
-                        <label className={labelStyle}>Ціна</label>
-                        <input required type="number" className={inputStyle} value={price} onChange={e => setPrice(e.target.value)} placeholder="1200" />
-                    </div>
-                    <div>
-                        <label className="block text-xs font-black text-red-500 uppercase mb-2">Стара ціна</label>
-                        <input type="number" className={`${inputStyle} border-red-100 focus:ring-red-200`} value={oldPrice} onChange={e => setOldPrice(e.target.value)} placeholder="(знижка)" />
-                    </div>
-                </div>
-            </div>
-
-            {/* CATEGORY */}
-            <div className={`p-6 rounded-xl border ${foundCategory ? 'bg-gray-50 border-gray-300' : 'bg-red-50 border-red-200'}`}>
-                <label className="block text-xs font-black text-black uppercase mb-2">
-                Категорія ({gender === 'men' ? 'Чоловіки' : 'Жінки'})
-                </label>
-                
-                <select 
-                className="w-full p-3 border border-gray-300 rounded-xl bg-white text-black font-bold cursor-pointer outline-none"
-                value={type}
-                onChange={e => setType(e.target.value)}
-                >
-                {availableTypes.map(t => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
-                ))}
-                </select>
-
-                <div className="mt-3 flex items-center justify-between text-xs font-mono text-black">
-                    <span>Slug: <strong>{targetSlug}</strong></span>
-                    {foundCategory ? (
-                        <span className="text-green-700 font-bold bg-green-100 px-2 py-1 rounded border border-green-200">
-                        ✅ ID: {foundCategory.id}
-                        </span>
-                    ) : (
-                        <span className="text-red-600 font-bold bg-red-100 px-2 py-1 rounded animate-pulse border border-red-200">
-                        ❌ Не знайдено (run seed)
-                        </span>
-                    )}
-                </div>
-            </div>
-
-            {/* IMAGE UPLOADER */}
-            <div>
-               <label className={labelStyle}>Фотографії товару</label>
-               <ImageUploader 
-                 existingImages={images} 
-                 colors={availableColors} 
-                 onImagesChange={setImages} 
-               />
-            </div>
-
-            {/* Manual Image URL (Fallback) */}
-            <div>
-                <label className={labelStyle}>Фото URL (або залиште пустим, якщо завантажили вище)</label>
-                <input type="text" className={inputStyle} value={imageUrl} onChange={e => setImageUrl(e.target.value)} />
-            </div>
-
-            <div>
-                <label className={labelStyle}>Опис</label>
-                <textarea rows={3} className={inputStyle} value={description} onChange={e => setDescription(e.target.value)} placeholder="Опис товару..." />
-            </div>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-4xl mx-auto">
+        
+        {/* Хедер сторінки, як у редагуванні */}
+        <div className="flex justify-between items-center mb-6">
+           <h1 className="text-2xl font-black text-slate-900">Створення нового товару</h1>
+           <Link href="/admin" className="text-gray-500 hover:text-red-500 font-bold">Скасувати</Link>
         </div>
+        
+        <form onSubmit={handleSubmit} className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 space-y-8">
+        
+          {/* 1. MAIN INFO */}
+          <div className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-4">
+                 <div className="flex gap-2 p-1 bg-gray-100 rounded-xl border border-gray-200">
+                    <button type="button" onClick={() => setGender('men')} 
+                        className={`flex-1 rounded-lg font-black text-xs uppercase transition-all ${gender === 'men' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-900 hover:bg-gray-200'}`}>
+                        Чол
+                    </button>
+                    <button type="button" onClick={() => setGender('women')} 
+                        className={`flex-1 rounded-lg font-black text-xs uppercase transition-all ${gender === 'women' ? 'bg-pink-600 text-white shadow-md' : 'text-slate-900 hover:bg-gray-200'}`}>
+                        Жін
+                    </button>
+                 </div>
+                 <select 
+                    className="p-3 border border-gray-300 rounded-xl bg-white text-slate-900 font-bold outline-none focus:ring-2 ring-slate-900" 
+                    value={type} 
+                    onChange={e => setType(e.target.value)}
+                 >
+                    {availableTypes.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                 </select>
+              </div>
 
-        <hr className="border-gray-200" />
+              <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <label className={labelStyle}>Назва</label>
+                    <input required type="text" className={inputStyle} value={title} onChange={e => setTitle(e.target.value)} />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2">
+                      <div>
+                          <label className={labelStyle}>Ціна</label>
+                          <input required type="number" className={inputStyle} value={price} onChange={e => setPrice(e.target.value)} />
+                      </div>
+                      <div>
+                          <label className="block text-xs font-black text-red-500 uppercase mb-2">Знижка (стара ціна)</label>
+                          <input type="number" className={`${inputStyle} border-red-200 text-red-600 focus:ring-red-200`} value={oldPrice} onChange={e => setOldPrice(e.target.value)} />
+                      </div>
+                  </div>
+              </div>
 
-        {/* 2. VARIANTS CONFIG */}
-        <div className="space-y-6">
-            <h2 className="text-xl font-black uppercase">Варіанти та Склад</h2>
-            
-            <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 space-y-6">
-                
-                {/* Size Selector */}
-                <div>
-                    <label className={labelStyle}>1. Оберіть Розміри</label>
-                    <div className="flex gap-2 flex-wrap">
-                        {availableSizes.map(size => (
-                        <button 
-                            key={size} type="button" onClick={() => toggleSize(size)}
-                            className={`px-4 py-2 rounded-lg font-bold border-2 transition-all duration-200 ${selectedSizes.includes(size) ? 'bg-slate-900 text-white border-slate-900 shadow-lg scale-105' : 'bg-white text-slate-900 border-gray-300 hover:border-slate-900'}`}
-                        >
-                            {size}
-                        </button>
-                        ))}
-                    </div>
-                </div>
+              {/* IMAGE UPLOADER */}
+              <div>
+                 <label className={labelStyle}>Фотогалерея (Завантажте та оберіть колір)</label>
+                 <ImageUploader 
+                   existingImages={images} 
+                   colors={availableColors} 
+                   onImagesChange={setImages} 
+                 />
+              </div>
 
-                {/* Color Selector */}
-                <div>
-                    <label className={labelStyle}>2. Оберіть Кольори</label>
-                    <div className="flex gap-2 flex-wrap">
-                        {availableColors.map(color => (
-                        <button 
-                            key={color} type="button" onClick={() => toggleColor(color)}
-                            className={`px-4 py-2 rounded-lg font-bold border-2 capitalize transition-all duration-200 ${selectedColors.includes(color) ? 'bg-slate-900 text-white border-slate-900 shadow-lg scale-105' : 'bg-white text-slate-900 border-gray-300 hover:border-slate-900'}`}
-                        >
-                            {color}
-                        </button>
-                        ))}
-                    </div>
-                </div>
+              {/* Manual Image URL */}
+              <div>
+                  <label className={labelStyle}>Основне фото URL (резерв)</label>
+                  <input type="text" className={inputStyle} value={imageUrl} onChange={e => setImageUrl(e.target.value)} />
+              </div>
 
-                {/* Generate Button */}
-                <button type="button" onClick={generateVariants} className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition shadow">
-                    🔄 Згенерувати таблицю кількості
-                </button>
+              <div>
+                  <label className={labelStyle}>Опис</label>
+                  <textarea rows={3} className={inputStyle} value={description} onChange={e => setDescription(e.target.value)} />
+              </div>
+          </div>
 
-            </div>
+          <hr className="border-gray-200" />
 
-            {/* VARIANTS TABLE */}
-            {variants.length > 0 && (
-                <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                    <table className="w-full text-left bg-white">
-                        <thead className="bg-gray-100 text-xs uppercase font-black text-gray-500 border-b">
-                            <tr>
-                                <th className="p-4">Колір</th>
-                                <th className="p-4">Розмір</th>
-                                <th className="p-4 w-40">Кількість (шт)</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                            {variants.map((v) => (
-                                <tr key={v.id} className="hover:bg-gray-50">
-                                    <td className="p-4 font-bold capitalize">{v.color}</td>
-                                    <td className="p-4 font-bold">{v.size}</td>
-                                    <td className="p-4">
-                                        <input 
-                                            type="number" min="0" 
-                                            value={v.stock}
-                                            onChange={(e) => updateVariantStock(v.id, e.target.value)}
-                                            className="w-full p-2 border border-gray-300 rounded font-bold text-center focus:ring-2 ring-black outline-none"
-                                        />
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            )}
-        </div>
+          {/* 2. VARIANTS CONFIG */}
+          <div className="space-y-6">
+              <div className="flex justify-between items-end">
+                  <h2 className="text-xl font-black uppercase text-slate-900">Склад та Варіанти</h2>
+                  <span className="text-xs text-gray-500 font-medium">Оберіть нові кольори/розміри та натисніть "Оновити таблицю"</span>
+              </div>
+              
+              <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 space-y-6">
+                  
+                  {/* Size Selector */}
+                  <div>
+                      <label className={labelStyle}>Доступні Розміри:</label>
+                      <div className="flex gap-2 flex-wrap">
+                          {availableSizes.map(size => (
+                          <button 
+                              key={size} type="button" onClick={() => toggleSize(size)}
+                              className={`px-3 py-1.5 rounded-lg font-bold border-2 text-sm transition-all ${selectedSizes.includes(size) ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-900 border-gray-300 hover:border-slate-900'}`}
+                          >
+                              {size}
+                          </button>
+                          ))}
+                      </div>
+                  </div>
 
-        {/* SAVE BUTTON */}
-        <button disabled={loading || !foundCategory} className="w-full py-4 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition shadow-lg disabled:opacity-50 text-lg border-b-4 border-green-800 active:border-b-0 active:translate-y-1">
-            {loading ? 'Збереження...' : '✅ Створити Товар'}
-        </button>
+                  {/* Color Selector */}
+                  <div>
+                      <label className={labelStyle}>Доступні Кольори:</label>
+                      <div className="flex gap-2 flex-wrap">
+                          {availableColors.map(color => (
+                          <button 
+                              key={color} type="button" onClick={() => toggleColor(color)}
+                              className={`px-3 py-1.5 rounded-lg font-bold border-2 text-sm capitalize transition-all ${selectedColors.includes(color) ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-900 border-gray-300 hover:border-slate-900'}`}
+                          >
+                              {color}
+                          </button>
+                          ))}
+                      </div>
+                  </div>
 
-      </form>
+                  {/* Generate Button */}
+                  <button type="button" onClick={generateVariants} className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition flex items-center justify-center gap-2 shadow-sm">
+                      Оновити таблицю
+                  </button>
+
+              </div>
+
+              {/* МАТРИЦЯ ВАРІАНТІВ */}
+              {variants.length > 0 ? (
+                  <div className="space-y-3">
+                      {activeColors.map(color => (
+                          <div key={color} className="flex flex-col md:flex-row md:items-center gap-4 p-5 border border-gray-200 rounded-2xl bg-white shadow-sm hover:border-blue-300 transition-colors">
+                              
+                              {/* Ліва частина: Назва кольору */}
+                              <div className="flex items-center gap-3 w-40 flex-shrink-0">
+                                  <div className="w-6 h-6 rounded-full border border-gray-300 shadow-sm" style={{ backgroundColor: getColorHex(color) }}></div>
+                                  <span className="font-black text-slate-900 text-sm capitalize">{color}</span>
+                              </div>
+
+                              {/* Права частина: Всі розміри цього кольору */}
+                              <div className="flex flex-wrap gap-3 items-center">
+                                  {activeSizes.map(size => {
+                                      const variant = variants.find(v => v.color === color && v.size === size);
+                                      if (!variant) return null;
+
+                                      return (
+                                          <div key={size} className="flex items-center gap-2 bg-gray-50 p-2 rounded-xl border border-gray-100 shadow-sm">
+                                              <span className="text-xs font-black text-slate-900 bg-gray-200 px-2 py-1.5 rounded-lg w-10 text-center uppercase tracking-wider">{size}</span>
+                                              <input
+                                                  type="number"
+                                                  min="0"
+                                                  value={variant.stock}
+                                                  onChange={(e) => updateMatrixStock(color, size, e.target.value)}
+                                                  className={`w-20 p-2 border rounded-lg font-bold text-center outline-none focus:ring-2 transition-all ${
+                                                      variant.stock > 0 
+                                                          ? 'border-gray-300 text-slate-900 focus:ring-slate-900' 
+                                                          : 'border-red-300 text-red-600 bg-red-50 focus:ring-red-300'
+                                                  }`}
+                                              />
+                                              <span className="text-xs font-bold text-gray-400">шт.</span>
+                                          </div>
+                                      );
+                                  })}
+                              </div>
+                          </div>
+                      ))}
+                  </div>
+              ) : (
+                  <div className="text-center p-8 bg-gray-50 rounded-xl border border-dashed border-gray-300 text-gray-400 font-medium">
+                      Варіанти відсутні. Оберіть розміри та кольори вище і натисніть "Оновити таблицю".
+                  </div>
+              )}
+          </div>
+
+          {/* SAVE BUTTON */}
+          <button disabled={loading || !foundCategory} className="w-full py-4 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition shadow-lg disabled:opacity-50 text-lg border-b-4 border-green-800 active:border-b-0 active:translate-y-1">
+              {loading ? 'Створення...' : 'Створити Товар'}
+          </button>
+
+        </form>
+      </div>
     </div>
   );
 }

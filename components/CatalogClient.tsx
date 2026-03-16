@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import ProductCard from '@/components/ProductCard';
+import SortDropdown from '@/components/SortDropdown';
 
 interface Category {
   id: number;
@@ -28,48 +29,36 @@ interface CatalogProps {
 export default function CatalogClient({ initialProducts, categories }: CatalogProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
-
-  // 1. ВИЗНАЧАЄМО МАКСИМАЛЬНУ ЦІНУ
   const maxGlobalPrice = Math.max(...initialProducts.map(p => Number(p.price)), 1000);
   const minGlobalPrice = 0;
-
-  // === СТАНИ ===
   const [products, setProducts] = useState(initialProducts);
-  
-  // Отримуємо параметри з URL
   const initialCategory = searchParams.get('category') || 'all';
-  
-  // 👇 ОТРИМУЄМО ПОШУКОВИЙ ЗАПИТ
   const searchQuery = searchParams.get('search') || '';
-
   const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory);
   const [selectedSize, setSelectedSize] = useState<string>('all');
   const [priceRange, setPriceRange] = useState([minGlobalPrice, maxGlobalPrice]);
   const [sortOrder, setSortOrder] = useState('newest');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-  // Синхронізація URL (якщо змінилась категорія або пошук в адресному рядку)
+  // Синхронізація URL 
   useEffect(() => {
     const categoryFromUrl = searchParams.get('category');
     setSelectedCategory(categoryFromUrl || 'all');
   }, [searchParams]);
 
-  // === ГОЛОВНА ЛОГІКА ФІЛЬТРАЦІЇ ===
+  // ГОЛОВНА ЛОГІКА ФІЛЬТРАЦІЇ 
   useEffect(() => {
     let result = [...initialProducts];
 
-    // 1. 👇 ПОШУК (Це найважливіше нововведення)
+    // 1. ПОШУК
     if (searchQuery) {
       const lowerQuery = searchQuery.toLowerCase();
       result = result.filter(p => 
         p.title.toLowerCase().includes(lowerQuery)
-        // Можна додати пошук по категорії, якщо треба:
-        // || p.category.name.toLowerCase().includes(lowerQuery)
       );
     }
 
-    // 2. Категорія (Фільтруємо, тільки якщо не обрано "всі")
-    // Але якщо є пошуковий запит, іноді категорію скидають, але тут залишимо комбінацію
+    // 2. Категорія
     if (selectedCategory !== 'all') {
       result = result.filter(p => p.category.slug === selectedCategory);
     }
@@ -85,21 +74,20 @@ export default function CatalogClient({ initialProducts, categories }: CatalogPr
       return price >= priceRange[0] && price <= priceRange[1];
     });
 
-    // 5. Сортування
-    if (sortOrder === 'price-asc') {
+    // 5. Сортування 
+    if (sortOrder === 'price_asc' || sortOrder === 'price-asc') {
       result.sort((a, b) => Number(a.price) - Number(b.price));
-    } else if (sortOrder === 'price-desc') {
+    } else if (sortOrder === 'price_desc' || sortOrder === 'price-desc') {
       result.sort((a, b) => Number(b.price) - Number(a.price));
     } else {
       result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }
 
     setProducts(result);
-  }, [selectedCategory, selectedSize, priceRange, sortOrder, initialProducts, searchQuery]); // 👈 Додали searchQuery в залежності
+  }, [selectedCategory, selectedSize, priceRange, sortOrder, initialProducts, searchQuery]);
 
   const changeCategory = (slug: string) => {
     setSelectedCategory(slug);
-    // При зміні категорії скидаємо пошук (опціонально, але логічно)
     if (slug === 'all') {
       router.push('/catalog', { scroll: false });
     } else {
@@ -109,7 +97,6 @@ export default function CatalogClient({ initialProducts, categories }: CatalogPr
 
   const allSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
-  // Структура сайдбару (скорочено для читабельності, ваш код тут залишається таким самим)
   const sidebarStructure = [
     {
       title: "ЧОЛОВІКАМ",
@@ -156,7 +143,7 @@ export default function CatalogClient({ initialProducts, categories }: CatalogPr
         </button>
       </div>
 
-      {/* === САЙДБАР === */}
+      {/*САЙДБАР*/}
       <aside className={`lg:w-64 flex-shrink-0 space-y-8 ${isFilterOpen ? 'block' : 'hidden lg:block'}`}>
         
         <button 
@@ -228,26 +215,20 @@ export default function CatalogClient({ initialProducts, categories }: CatalogPr
       {/* === ТОВАРИ === */}
       <div className="flex-grow">
         
-        <div className="flex justify-between items-center mb-6 pb-6 border-b border-gray-100">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-6 border-b border-gray-100">
           <div>
             <h2 className="text-xl font-bold text-slate-900">
-                {/* 👇 ВІДОБРАЖЕННЯ ЗАГОЛОВКУ ПРИ ПОШУКУ */}
                 {searchQuery ? (
-                    <>Пошук: <span className="text-blue-600">"{searchQuery}"</span></>
+                  <>Пошук: <span className="text-blue-600">"{searchQuery}"</span></>
                 ) : selectedCategory === 'all' ? (
-                    'Всі товари'
+                  'Всі товари'
                 ) : (
-                    sidebarStructure.flatMap(g => g.items).find(i => i.slug === selectedCategory)?.name || 'Категорія'
+                  sidebarStructure.flatMap(g => g.items).find(i => i.slug === selectedCategory)?.name || 'Категорія'
                 )}
             </h2>
             <span className="text-gray-400 text-sm font-normal">Знайдено товарів: {products.length}</span>
           </div>
-          
-          <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} className="bg-transparent font-bold text-sm focus:outline-none cursor-pointer text-right text-slate-900">
-            <option value="newest">Спочатку нові</option>
-            <option value="price-asc">Дешеві</option>
-            <option value="price-desc">Дорогі</option>
-          </select>
+          <SortDropdown value={sortOrder} onChange={setSortOrder} /> 
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -255,19 +236,17 @@ export default function CatalogClient({ initialProducts, categories }: CatalogPr
             <ProductCard key={product.id} product={product} />
           ))}
         </div>
-
-        {/* ПОВІДОМЛЕННЯ ПРО ПУСТИЙ РЕЗУЛЬТАТ */}
         {products.length === 0 && (
           <div className="text-center py-20 bg-white rounded-2xl border-2 border-dashed border-gray-100">
             <div className="text-5xl mb-4">🔍</div>
             <p className="text-gray-500 mb-2">
                 {searchQuery 
-                    ? `За запитом "${searchQuery}" нічого не знайдено` 
-                    : "Товарів за вибраними фільтрами не знайдено"}
+                  ? `За запитом "${searchQuery}" нічого не знайдено` 
+                  : "Товарів за вибраними фільтрами не знайдено"}
             </p>
             <button 
               onClick={() => {
-                 router.push('/catalog'); // Скидаємо все, включаючи пошук
+                 router.push('/catalog');
               }} 
               className="text-blue-600 font-bold hover:underline"
             >

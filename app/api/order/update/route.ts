@@ -12,10 +12,10 @@ export async function PATCH(req: Request) {
     const updatedOrder = await prisma.order.update({
       where: { id: id },
       data: {
-        status,           // Оновлюємо статус
-        customerName,     // Оновлюємо ім'я
-        customerPhone,    // Оновлюємо телефон
-        customerAddress,  // Оновлюємо адресу
+        status,           
+        customerName,     
+        customerPhone,    
+        customerAddress,  
       }
     });
 

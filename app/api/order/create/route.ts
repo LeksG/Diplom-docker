@@ -6,7 +6,6 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    // Дістаємо нові поля shippingMethod та paymentMethod
     const { 
       customerName, customerPhone, customerAddress, customerEmail, 
       cartItems, totalPrice, shippingMethod, paymentMethod 
@@ -18,8 +17,8 @@ export async function POST(req: Request) {
         customerPhone,
         customerAddress,
         customerEmail: customerEmail || null,
-        shippingMethod, // <--- ЗБЕРІГАЄМО ДОСТАВКУ
-        paymentMethod,  // <--- ЗБЕРІГАЄМО ОПЛАТУ
+        shippingMethod, 
+        paymentMethod, 
         totalPrice: totalPrice,
         status: 'NEW',
         items: {

@@ -3,11 +3,12 @@
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { useEffect, useState, useRef } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import AuthModal from './AuthModal'; 
 import { useWishlist } from '@/context/WishlistContext';
+import{ UserService, ProductService} from '@/services/api';
+import Cookies from 'js-cookie';
 
-// Інтерфейс для результатів пошуку
 interface SearchResult {
   id: number;
   title: string;
@@ -22,43 +23,64 @@ export default function Header() {
   
   const [user, setUser] = useState<any>(null);
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
 
-  // Стан пошуку
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]); // 👇 Результати
-  const [isSearching, setIsSearching] = useState(false); // 👇 Індикатор завантаження
-
-  const ADMIN_EMAIL = 'grand78122@gmail.com'; 
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
-    const checkUser = () => {
-      const userStr = localStorage.getItem('user');
-      if (userStr) {
-        try { setUser(JSON.parse(userStr)); } catch (e) { setUser(null); }
-      } else { setUser(null); }
+    if (searchParams.get('auth') === 'true') {
+      setIsAuthOpen(true);
+      // Очищаємо URL від ?auth=true, щоб модалка не з'являлася знову при рефреші
+      const newPath = pathname; 
+      router.replace(newPath);
+    }
+  }, [searchParams, pathname, router]);
+
+  //  ЛОГІКА ПЕРЕВІРКИ КОРИСТУВАЧА 
+  useEffect(() => {
+    const initAuth = async () => {
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        setUser(null);
+        return;
+      }
+
+      try {
+        const userData = await UserService.getCurrentUser();
+        
+        setUser(userData);
+        localStorage.setItem('user', JSON.stringify(userData));
+        
+      } catch (err) {
+        console.error("Auth error:", err);
+        setUser(null);
+      }
     };
-    checkUser();
+
+    initAuth();
     setIsSearchOpen(false); 
-    setSearchQuery(''); // Очищуємо пошук при переході
+    setSearchQuery('');
     setSearchResults([]);
   }, [pathname]);
 
-  const isAdmin = user && user.email === ADMIN_EMAIL;
+  const isAdmin = user?.role === 'ADMIN' || user?.email === 'grand78122@gmail.com';
 
-  // 👇 ЛОГІКА ЖИВОГО ПОШУКУ
+
+ 
+  // ЛОГІКА ЖИВОГО ПОШУКУ
   useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
       if (searchQuery.trim().length >= 2) {
         setIsSearching(true);
         try {
-          const res = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`);
-          if (res.ok) {
-            const data = await res.json();
-            setSearchResults(data);
-          }
+          const data = await ProductService.search(searchQuery);
+          setSearchResults(data);
         } catch (error) {
           console.error("Search error", error);
         } finally {
@@ -67,7 +89,7 @@ export default function Header() {
       } else {
         setSearchResults([]);
       }
-    }, 300); // Чекаємо 300мс після останнього натискання клавіші
+    }, 300);
 
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery]);
@@ -87,12 +109,11 @@ export default function Header() {
       <header className="sticky top-0 z-40 w-full border-b border-gray-200 bg-white/90 backdrop-blur-md">
         <div className="relative flex h-20 items-center justify-between px-6 max-w-[1920px] mx-auto">
           
-          {/* === ВІКНО ПОШУКУ === */}
+          {/* ВІКНО ПОШУКУ */}
           {isSearchOpen ? (
             <div className="absolute inset-0 z-50 bg-white flex items-start pt-5 px-6 animate-in fade-in slide-in-from-top-1 duration-200 shadow-xl">
               <div className="w-full max-w-4xl mx-auto relative">
                 
-                {/* Форма */}
                 <form onSubmit={handleSearchSubmit} className="w-full flex items-center gap-4 border-b-2 border-gray-100 pb-4">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-gray-400">
                     <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
@@ -113,7 +134,6 @@ export default function Header() {
                   </button>
                 </form>
 
-                {/* 👇 ВИПАДАЮЧИЙ СПИСОК РЕЗУЛЬТАТІВ */}
                 {searchResults.length > 0 && (
                   <div className="absolute top-full left-0 w-full bg-white shadow-2xl rounded-b-2xl border border-t-0 border-gray-100 overflow-hidden z-50">
                     {searchResults.map((product) => (
@@ -137,7 +157,6 @@ export default function Header() {
                         </div>
                       </Link>
                     ))}
-                    {/* Посилання "Показати всі" */}
                     <button 
                       onClick={handleSearchSubmit}
                       className="w-full py-3 text-center text-sm font-bold text-blue-600 hover:bg-blue-50 transition uppercase tracking-wide"
@@ -164,10 +183,8 @@ export default function Header() {
                 </Link>
               </div>
 
-              {/* НАВІГАЦІЯ (стандартна) */}
+              {/* НАВІГАЦІЯ */}
               <nav className="hidden md:flex gap-8 h-full items-center">
-                {/* ... (Ваш код навігації залишається без змін) ... */}
-                
                 {/* ЧОЛОВІКАМ */}
                 <div className="group relative h-full flex items-center">
                   <Link href="/catalog?gender=men" className="text-sm font-bold text-slate-900 hover:text-blue-600 uppercase tracking-wide py-8">Чоловікам</Link>
@@ -204,7 +221,7 @@ export default function Header() {
                   </div>
                 </div>
 
-                <Link href="/about" className="text-sm font-bold text-gray-500 hover:text-slate-900 uppercase tracking-wide">Про нас</Link>
+                <Link href="/about" className="text-sm font-bold text-slate-900 hover:text-blue-600 uppercase tracking-wide py-8">Про нас</Link>
               </nav>
 
               {/* ІКОНКИ */}
@@ -220,12 +237,15 @@ export default function Header() {
                   <Link href="/admin" className="hidden md:flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-full text-xs font-bold hover:bg-slate-700 transition"><span>ADMIN</span></Link>
                 )}
 
+                {/* ЛОГІКА ІКОНКИ ПРОФІЛЮ ТА ВИХОДУ */}
                 {user ? (
-                  <Link href="/profile" className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100 transition text-slate-900" title="Кабінет">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-blue-600">
-                      <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z" clipRule="evenodd" />
-                    </svg>
-                  </Link>
+                  <div className="flex items-center gap-1">
+                    <Link href="/profile" className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100 transition text-slate-900" title="Кабінет">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-blue-600">
+                        <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z" clipRule="evenodd" />
+                      </svg>
+                    </Link>
+                  </div>
                 ) : (
                   <button onClick={() => setIsAuthOpen(true)} className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100 transition text-slate-900" title="Увійти">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">

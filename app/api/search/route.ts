@@ -17,10 +17,10 @@ export async function GET(req: Request) {
       where: {
         title: {
           contains: query,
-          mode: 'insensitive', // Ігноруємо регістр (великі/малі літери)
+          mode: 'insensitive', 
         },
       },
-      take: 5, // Беремо тільки 5 схожих товарів
+      take: 5,
       select: {
         id: true,
         title: true,

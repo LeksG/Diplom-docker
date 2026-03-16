@@ -1,15 +1,25 @@
 import { prisma } from '@/lib/prisma';
-import AdminOrderCard from '@/components/AdminOrderCard'; // Імпортуємо картку
+import AdminOrderCard from '@/components/AdminOrderCard';
 import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminOrdersPage() {
-  // Завантажуємо замовлення (нові зверху)
-  const orders = await prisma.order.findMany({
+ 
+  const rawOrders = await prisma.order.findMany({
     orderBy: { createdAt: 'desc' },
     include: { items: true }
   });
+
+  const orders = rawOrders.map((order) => ({
+    ...order,
+   
+    totalPrice: Number(order.totalPrice),
+    items: order.items.map((item) => ({
+      ...item,
+      price: Number(item.price),
+    })),
+  }));
 
   return (
     <main className="min-h-screen bg-gray-50 py-10 px-4">
@@ -33,7 +43,6 @@ export default async function AdminOrdersPage() {
               <p className="text-gray-400 text-lg">Замовлень поки немає</p>
             </div>
           ) : (
-            // Для кожного замовлення малюємо нашу "Розумну картку"
             orders.map((order) => (
               <AdminOrderCard key={order.id} order={order} />
             ))

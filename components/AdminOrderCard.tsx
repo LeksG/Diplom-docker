@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { OrderService } from '@/services/api';
 
 interface OrderProps {
   order: any; // Тут спрощений тип, щоб не ускладнювати
@@ -34,17 +35,12 @@ export default function AdminOrderCard({ order }: OrderProps) {
   const handleUpdate = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/order/update', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: order.id, ...formData }),
-      });
+     await OrderService.update({ id: order.id, ...formData });
 
-      if (res.ok) {
         setIsEditing(false);
-        router.refresh(); // Оновлюємо сторінку, щоб побачити зміни
+        router.refresh(); 
         alert('Замовлення оновлено!');
-      }
+      
     } catch (e) {
       alert('Помилка оновлення');
     } finally {
@@ -57,11 +53,8 @@ export default function AdminOrderCard({ order }: OrderProps) {
     if (!confirm('Видалити це замовлення назавжди?')) return;
     
     try {
-      await fetch('/api/order/delete', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: order.id }),
-      });
+      await OrderService.delete(order.id);
+      
       router.refresh();
     } catch (e) {
       alert('Помилка видалення');

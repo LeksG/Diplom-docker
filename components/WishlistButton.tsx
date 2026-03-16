@@ -3,14 +3,13 @@
 import { useWishlist } from '@/context/WishlistContext';
 import { useEffect, useState } from 'react';
 
-// 👇 Оновлений тип
 interface Product {
   id: number;
   title: string;
   price: number;
   imageUrl?: string | null;
-  sizes?: string[];  // <---
-  colors?: string[]; // <---
+  sizes?: string[];  
+  colors?: string[]; 
 }
 
 export default function WishlistButton({ product, className = "" }: { product: Product, className?: string }) {

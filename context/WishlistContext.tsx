@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-// 👇 ДОДАЛИ sizes та colors в інтерфейс
+
 interface Product {
   id: number;
   title: string;
@@ -10,8 +10,8 @@ interface Product {
   imageUrl?: string | null;
   slug?: string;
   category?: { name: string; slug: string };
-  sizes?: string[];  // <--- НОВЕ
-  colors?: string[]; // <--- НОВЕ
+  sizes?: string[];  
+  colors?: string[]; 
 }
 
 interface WishlistContextType {

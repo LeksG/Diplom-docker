@@ -1,11 +1,8 @@
 import { prisma } from '@/lib/prisma';
 import AdminProductForm from '@/components/AdminProductForm';
-
-// Робимо сторінку динамічною, щоб завжди бачити свіжі категорії
 export const dynamic = 'force-dynamic';
 
 export default async function AddProductPage() {
-  // Завантажуємо категорії для випадаючого списку
   const categories = await prisma.category.findMany();
 
   return (
@@ -23,7 +20,7 @@ export default async function AddProductPage() {
           </a>
         </div>
 
-        {/* Форма (Ми її створили раніше в components/AdminProductForm.tsx) */}
+        {/* Форма  */}
         <AdminProductForm categories={categories} />
         
       </div>

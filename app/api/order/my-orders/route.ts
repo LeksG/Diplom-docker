@@ -11,13 +11,12 @@ export async function POST(req: Request) {
       return NextResponse.json([]);
     }
 
-    // Шукаємо замовлення, де customerEmail співпадає
     const orders = await prisma.order.findMany({
       where: { 
         customerEmail: email 
       },
-      orderBy: { createdAt: 'desc' }, // Нові зверху
-      include: { items: true }        // Включаючи товари
+      orderBy: { createdAt: 'desc' }, 
+      include: { items: true }        
     });
 
     return NextResponse.json(orders);

@@ -75,15 +75,6 @@ export default function DeliveryPage() {
               </p>
             </div>
           </div>
-
-          {/* Інфо про безкоштовну доставку */}
-          <div className="mt-8 bg-blue-50 border border-blue-100 rounded-xl p-4 flex items-center gap-4">
-            <div className="text-2xl">🎁</div>
-            <div>
-              <p className="font-bold text-slate-900 text-sm">Безкоштовна доставка</p>
-              <p className="text-xs text-blue-700">При замовленні на суму від <b>3000 ₴</b> доставка за наш рахунок.</p>
-            </div>
-          </div>
         </div>
 
         {/* 3. БЛОК ОПЛАТИ */}
@@ -110,11 +101,6 @@ export default function DeliveryPage() {
                 <p className="text-sm text-gray-500 mt-1">
                   Безпечна оплата через WayForPay або Apple/Google Pay. Комісія 0%.
                 </p>
-                <div className="flex gap-2 mt-3 opacity-60">
-                   <div className="h-6 w-10 bg-gray-200 rounded"></div> {/* Імітація лого Visa */}
-                   <div className="h-6 w-10 bg-gray-200 rounded"></div> {/* Імітація лого MC */}
-                   <div className="h-6 w-10 bg-gray-200 rounded"></div> {/* Імітація лого ApplePay */}
-                </div>
               </div>
             </div>
 
@@ -141,8 +127,8 @@ export default function DeliveryPage() {
         {/* Питання? */}
         <div className="mt-12 text-center">
           <p className="text-gray-500 mb-4">Залишилися питання?</p>
-          <Link href="/about" className="text-blue-600 font-bold hover:underline">
-            Зв'язатися з нами
+          <Link href="/contacts" className="text-blue-600 font-bold hover:underline">
+            Зв'язатися з підтримкою
           </Link>
         </div>
 

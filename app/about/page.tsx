@@ -16,9 +16,6 @@ export default function AboutPage() {
           <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tight mb-6">
             FIRMOVUY — це стиль, <span className="text-blue-500">який ти обираєш!</span>
           </h1>
-          <p className="text-lg md:text-xl text-gray-300 leading-relaxed max-w-2xl mx-auto">
-            Ми не просто продаємо одяг. Ми допомагаємо тобі виразити себе через якісні брендові речі, які дарують впевненість.
-          </p>
         </div>
       </section>
 
@@ -26,13 +23,13 @@ export default function AboutPage() {
       <section className="py-20 px-6 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
-            <h2 className="text-3xl font-black text-slate-900 uppercase">Наша місія</h2>
+            <h2 className="text-3xl font-black text-slate-900 uppercase">Хто ми?</h2>
             <div className="w-20 h-1 bg-blue-600 rounded-full"></div>
             <p className="text-gray-600 leading-relaxed text-lg">
-              Проєкт <b>FIRMOVUY</b> був створений з простою метою: зробити оригінальний брендовий одяг доступним та зручним для замовлення в Україні.
+              Мета <b>FIRMOVUY</b> проста — якісний і стильний одяг без зайвих переплат і довгих очікувань.
             </p>
             <p className="text-gray-600 leading-relaxed text-lg">
-              Ми втомилися від підробок, довгих очікувань та поганого сервісу. Тому ми створили простір, де кожен клієнт — це наш друг, а кожна річ — це гарантія якості. Ми ретельно відбираємо колекції, слідкуємо за трендами та дбаємо про те, щоб ви отримали своє замовлення максимально швидко.
+              Ми створили простір, де немає складних схем чи сумнівної якості. Тільки актуальні моделі, швидка доставка та людське ставлення до кожного замовлення. Обирайте те, що вам до смаку, а про ваш комфорт і швидкий сервіс подбаємо ми.
             </p>
             
             <div className="flex gap-8 pt-4">
@@ -47,10 +44,9 @@ export default function AboutPage() {
             </div>
           </div>
           
-          {/* Імітація фото (замініть на реальне фото команди або складу) */}
+          {/* фото */}
           <div className="relative aspect-square md:aspect-[4/3] bg-gray-100 rounded-2xl overflow-hidden shadow-xl group">
              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent z-10"></div>
-             {/* Тут має бути ваше фото */}
              <img 
                src="https://images.unsplash.com/photo-1523381210434-271e8be1f52b?q=80&w=2070&auto=format&fit=crop" 
                alt="Team work" 
@@ -64,7 +60,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* 3. ЧОМУ ОБИРАЮТЬ НАС (ПЕРЕВАГИ) */}
+      {/* 3. ЧОМУ ОБИРАЮТЬ НАС */}
       <section className="bg-gray-50 py-20 px-6">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-3xl font-black text-center text-slate-900 uppercase mb-16">Чому обирають нас?</h2>
@@ -77,9 +73,9 @@ export default function AboutPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 5.523-4.477 10-10 10S1 17.523 1 12 5.477 2 12 2s10 4.477 10 10Z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">100% Оригінал</h3>
+              <h3 className="text-xl font-bold text-slate-900 mb-3">Перевірена якість</h3>
               <p className="text-gray-500 leading-relaxed">
-                Ми співпрацюємо тільки з офіційними постачальниками. Жодних реплік чи копій. Тільки автентичні бренди.
+                Ми збираємо тільки якісні речі, які відповідають високим стандартам. Кожен товар проходить строгий контроль якості.
               </p>
             </div>
 
