@@ -12,6 +12,7 @@
   "dependencies": {
     "@stripe/stripe-js": "^8.7.0",
     "@supabase/supabase-js": "^2.93.3",
+    "autoprefixer": "^10.4.27",
     "bcryptjs": "^3.0.3",
     "framer-motion": "^12.34.3",
     "jose": "^6.2.0",
@@ -20,6 +21,7 @@
     "next": "^16.1.6",
     "next-nprogress-bar": "^2.4.7",
     "nextjs-toploader": "^3.9.17",
+    "postcss": "^8.5.8",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "resend": "^6.9.2",
@@ -29,7 +31,7 @@
   },
   "devDependencies": {
     "@prisma/client": "^5.10.0",
-    "@tailwindcss/postcss": "^4",
+    "@tailwindcss/postcss": "^4.2.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/js-cookie": "^3.0.6",
     "@types/jsonwebtoken": "^9.0.10",
@@ -39,7 +41,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.4",
     "prisma": "^5.10.0",
-    "tailwindcss": "^4",
+    "tailwindcss": "^4.2.1",
     "ts-node": "^10.9.2",
     "typescript": "^5"
   },

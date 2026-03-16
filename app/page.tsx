@@ -11,7 +11,8 @@ async function getLatestProducts() {
     orderBy: { createdAt: 'desc' },
   });
 
-  return products.map(product => ({
+  
+  return products.map((product: any) => ({
     ...product,
     price: Number(product.price),
     oldPrice: product.oldPrice ? Number(product.oldPrice) : null,
@@ -124,7 +125,8 @@ export default async function Home() {
 
           {/* Адаптивна сітка товарів */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-4 gap-y-8">
-            {products.map((product) => (
+            {/* Додав : any тут, щоб прибрати другу помилку */}
+            {products.map((product: any) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>

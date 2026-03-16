@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import ProductCard from '@/components/ProductCard';
 import SortDropdown from '@/components/SortDropdown';
@@ -26,7 +26,8 @@ interface CatalogProps {
   categories: Category[];
 }
 
-export default function CatalogClient({ initialProducts, categories }: CatalogProps) {
+// Створюємо внутрішній компонент для логіки, яка використовує useSearchParams
+function CatalogContent({ initialProducts, categories }: CatalogProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const maxGlobalPrice = Math.max(...initialProducts.map(p => Number(p.price)), 1000);
@@ -40,17 +41,14 @@ export default function CatalogClient({ initialProducts, categories }: CatalogPr
   const [sortOrder, setSortOrder] = useState('newest');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-  // Синхронізація URL 
   useEffect(() => {
     const categoryFromUrl = searchParams.get('category');
     setSelectedCategory(categoryFromUrl || 'all');
   }, [searchParams]);
 
-  // ГОЛОВНА ЛОГІКА ФІЛЬТРАЦІЇ 
   useEffect(() => {
     let result = [...initialProducts];
 
-    // 1. ПОШУК
     if (searchQuery) {
       const lowerQuery = searchQuery.toLowerCase();
       result = result.filter(p => 
@@ -58,23 +56,19 @@ export default function CatalogClient({ initialProducts, categories }: CatalogPr
       );
     }
 
-    // 2. Категорія
     if (selectedCategory !== 'all') {
       result = result.filter(p => p.category.slug === selectedCategory);
     }
 
-    // 3. Розмір
     if (selectedSize !== 'all') {
       result = result.filter(p => p.sizes.includes(selectedSize));
     }
 
-    // 4. ЦІНА
     result = result.filter(p => {
       const price = Number(p.price);
       return price >= priceRange[0] && price <= priceRange[1];
     });
 
-    // 5. Сортування 
     if (sortOrder === 'price_asc' || sortOrder === 'price-asc') {
       result.sort((a, b) => Number(a.price) - Number(b.price));
     } else if (sortOrder === 'price_desc' || sortOrder === 'price-desc') {
@@ -132,8 +126,6 @@ export default function CatalogClient({ initialProducts, categories }: CatalogPr
 
   return (
     <div className="flex flex-col lg:flex-row gap-8 relative">
-      
-      {/* Мобільна кнопка */}
       <div className="lg:hidden mb-4">
         <button 
           onClick={() => setIsFilterOpen(!isFilterOpen)}
@@ -143,9 +135,7 @@ export default function CatalogClient({ initialProducts, categories }: CatalogPr
         </button>
       </div>
 
-      {/*САЙДБАР*/}
       <aside className={`lg:w-64 flex-shrink-0 space-y-8 ${isFilterOpen ? 'block' : 'hidden lg:block'}`}>
-        
         <button 
           onClick={() => changeCategory('all')}
           className={`w-full text-left font-bold uppercase tracking-wide py-2 transition 
@@ -177,7 +167,6 @@ export default function CatalogClient({ initialProducts, categories }: CatalogPr
           </div>
         ))}
 
-        {/* ФІЛЬТР ЦІНИ */}
         <div className="pt-6 border-t border-gray-100">
           <h3 className="font-bold text-slate-900 mb-4 uppercase text-sm">Ціна (ГРН)</h3>
           <div className="flex items-center gap-2 mb-4">
@@ -200,7 +189,6 @@ export default function CatalogClient({ initialProducts, categories }: CatalogPr
           />
         </div>
 
-        {/* Фільтр Розмірів */}
         <div className="pt-6 border-t border-gray-100">
           <h3 className="font-bold text-slate-900 mb-4 uppercase text-sm">Розмір</h3>
           <div className="flex flex-wrap gap-2">
@@ -212,9 +200,7 @@ export default function CatalogClient({ initialProducts, categories }: CatalogPr
         </div>
       </aside>
 
-      {/* === ТОВАРИ === */}
       <div className="flex-grow">
-        
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-6 border-b border-gray-100">
           <div>
             <h2 className="text-xl font-bold text-slate-900">
@@ -246,7 +232,7 @@ export default function CatalogClient({ initialProducts, categories }: CatalogPr
             </p>
             <button 
               onClick={() => {
-                 router.push('/catalog');
+                  router.push('/catalog');
               }} 
               className="text-blue-600 font-bold hover:underline"
             >
@@ -256,5 +242,14 @@ export default function CatalogClient({ initialProducts, categories }: CatalogPr
         )}
       </div>
     </div>
+  );
+}
+
+// Головний експорт тепер обгорнутий у Suspense
+export default function CatalogClient(props: CatalogProps) {
+  return (
+    <Suspense fallback={<div className="text-center py-20 text-gray-500">Завантаження каталогу...</div>}>
+      <CatalogContent {...props} />
+    </Suspense>
   );
 }
