@@ -7,7 +7,7 @@ import { CartProvider } from '@/context/CartContext';
 import { WishlistProvider } from '@/context/WishlistContext';
 import CartModal from '@/components/CartModal';
 import TopProgressBar from '@/components/TopProgressBar';
-import { Suspense } from 'react'; // 1. Додаємо імпорт Suspense
+import { Suspense } from 'react'; 
 
 const inter = Inter({ subsets: ['latin', 'cyrillic'] });
 
@@ -33,6 +33,7 @@ export default function RootLayout({
             {/* 2. Обгортаємо Header у Suspense */}
             <Suspense fallback={<div className="h-20" />}>
               <Header />
+              
             </Suspense>
 
             <CartModal /> 

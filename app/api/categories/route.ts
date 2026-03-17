@@ -1,15 +1,13 @@
-import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
+import { CategoryService } from '@/services/category.service';
 
-export const dynamic = 'force-dynamic';
+const categoryService = new CategoryService();
 
 export async function GET() {
   try {
-    const categories = await prisma.category.findMany({
-      orderBy: { name: 'asc' }
-    });
-    return NextResponse.json(categories);
+    const data = await categoryService.getCategories();
+    return NextResponse.json(data);
   } catch (error) {
-    return NextResponse.json({ error: 'Error fetching categories' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

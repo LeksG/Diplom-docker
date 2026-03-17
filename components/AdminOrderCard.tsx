@@ -35,7 +35,7 @@ export default function AdminOrderCard({ order }: OrderProps) {
   const handleUpdate = async () => {
     setLoading(true);
     try {
-     await OrderService.update({ id: order.id, ...formData });
+    await OrderService.update(order.id, formData);
 
         setIsEditing(false);
         router.refresh(); 

@@ -60,33 +60,25 @@ export const CategoryService = {
 
 // 3. Сервіс для Авторизації 
 export const AuthService = {
-  login: async (data: any) => {
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    return res.json();
-    
-  },
-  register: async (data: any) => {
-    const res = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    return res.json();
-  }
+  login: (data: any) => fetchWithInterceptor('/api/auth/login', {
+    method: 'POST',
+    body: JSON.stringify(data), 
+  }),
+  
+  register: (data: any) => fetchWithInterceptor('/api/auth/register', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
 };
 
 // 4. Сервіс для Користувача
 export const UserService = {
-  getCurrentUser: () => fetchWithInterceptor('/api/user/get', { method: 'POST' }),
-  getProfile: (email: string) => fetchWithInterceptor('/api/user/get', { 
+  getCurrentUser: () => fetchWithInterceptor('/api/user', { method: 'POST' }),
+  getProfile: (email: string) => fetchWithInterceptor('/api/user', { 
     method: 'POST', 
     body: JSON.stringify({ email }) 
   }),
-  updateProfile: (data: any) => fetchWithInterceptor('/api/user/update', { 
+  updateProfile: (data: any) => fetchWithInterceptor('/api/user', { 
     method: 'PATCH', 
     body: JSON.stringify(data) 
   }),
@@ -98,22 +90,21 @@ export const MediaService = {
 };
 
 export const OrderService = {
-  update: (data: any) => fetchWithInterceptor('/api/order/update', {
+  update: (id: string | number, data: any) => fetchWithInterceptor(`/api/order/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(data),
   }),
-  delete: (id: string | number) => fetchWithInterceptor('/api/order/delete', {
+  delete: (id: string | number) => fetchWithInterceptor(`/api/order/${id}`, {
     method: 'DELETE',
     body: JSON.stringify({ id }),
   }),
   
-  getMyOrders: (email: string) => fetchWithInterceptor('/api/order/my-orders', {
-    method: 'POST',
-    body: JSON.stringify({ email }),
+  getMyOrders: (email: string) => fetchWithInterceptor(`/api/order?email=${email}`, {
+    method: 'GET',
   }),
 
   createOrder: (orderData: any) =>
-    fetchWithInterceptor('/api/order/create', {
+    fetchWithInterceptor('/api/order', {
       method: 'POST',
       body: JSON.stringify(orderData),
     }),

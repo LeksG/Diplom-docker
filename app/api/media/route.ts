@@ -30,7 +30,7 @@ export async function GET() {
     return NextResponse.json(imageUrls);
 
   } catch (error) {
-    console.error("🔥 Системна помилка медіабібліотеки:", error);
+    console.error(" Системна помилка медіабібліотеки:", error);
     return NextResponse.json({ error: 'Помилка сервера' }, { status: 500 });
   }
 }

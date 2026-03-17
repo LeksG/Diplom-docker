@@ -1,50 +1,15 @@
-
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { ReviewService } from '@/services/review.service';
+
+const reviewService = new ReviewService();
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { productId, email, rating, comment, parentId } = body;
-
-
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) {
-      return NextResponse.json({ error: 'Користувача не знайдено' }, { status: 401 });
-    }
-
-
-    if (!parentId) {
-      const existingReview = await prisma.review.findFirst({
-        where: { 
-          userId: user.id, 
-          productId: Number(productId), 
-          parentId: null 
-        }
-      });
-
-      if (existingReview) {
-        return NextResponse.json({ error: 'Ви вже оцінили цей товар' }, { status: 400 });
-      }
-    }
-
- 
-    const review = await prisma.review.create({
-      data: {
-        rating: Number(rating),
-        comment,
-        userId: user.id, 
-        productId: Number(productId),
-        parentId: parentId ? Number(parentId) : null,
-      },
-      include: {
-        user: { select: { fullName: true } } 
-      }
-    });
-
+    const review = await reviewService.addReview(body);
     return NextResponse.json(review);
-  } catch (error) {
-    console.error("POST Review Error:", error);
-    return NextResponse.json({ error: 'Помилка сервера' }, { status: 500 });
+  } catch (error: any) {
+    const status = error.message === 'ALREADY_REVIEWED' ? 400 : 401;
+    return NextResponse.json({ error: error.message }, { status });
   }
 }

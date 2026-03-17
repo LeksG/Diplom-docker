@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { searchCities, getWarehouses } from '@/lib/novaposhta';
-import { OrderService } from '@/services/api'; // Імпортуємо сервіс
+import { OrderService } from '@/services/api';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -21,12 +21,24 @@ export default function CheckoutPage() {
     firstName: '',
     middleName: '', 
     phone: '+380', 
+    email: '', // ДОДАНО
     city: '', 
     department: '',
     ukrRegion: '',
     ukrIndex: '',
     ukrAddress: ''
   });
+
+  // Автозаповнення email для залогінених користувачів
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        if (user.email) setForm(prev => ({ ...prev, email: user.email }));
+      }
+    }
+  }, []);
 
   // ЛОГІКА НОВОЇ ПОШТИ 
   const [cityQuery, setCityQuery] = useState('');
@@ -64,27 +76,33 @@ export default function CheckoutPage() {
     setForm({ ...form, phone: val });
   };
 
-  const isFormValid = () => {
-    if (!form.lastName.trim() || !form.firstName.trim() || form.phone.length < 13) return false;
+  // ВАЛІДАЦІЯ
+  const getValidationError = () => {
+    if (!form.lastName.trim()) return "Вкажіть прізвище";
+    if (!form.firstName.trim()) return "Вкажіть ім'я";
+    if (!form.email.trim() || !form.email.includes('@')) return "Вкажіть коректний Email"; // ДОДАНО
+    if (form.phone.length < 13) return "Введіть повний номер телефону";
+    
     if (shippingMethod === 'NOVA') {
-      if (!form.city || !form.department) return false;
+      if (!form.city) return "Оберіть місто зі списку";
+      if (!form.department) return "Оберіть відділення НП";
     } else {
-      if (!form.ukrIndex.trim() || !form.ukrRegion.trim() || !form.ukrAddress.trim()) return false;
+      if (!form.ukrIndex.trim()) return "Вкажіть індекс Укрпошти";
+      if (!form.ukrRegion.trim()) return "Вкажіть область/місто";
+      if (!form.ukrAddress.trim()) return "Вкажіть повну адресу";
     }
-    return true;
+    
+    return null; 
   };
+
+  const validationError = getValidationError();
+  const isValid = !validationError;
 
   // ВІДПРАВКА ТА ОПЛАТА 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isFormValid()) return;
+    if (!isValid) return; 
     setLoading(true);
-
-    let userEmail = '';
-    if (typeof window !== 'undefined') {
-      const userStr = localStorage.getItem('user');
-      if (userStr) userEmail = JSON.parse(userStr).email || '';
-    }
 
     const fullName = `${form.lastName} ${form.firstName} ${form.middleName}`.trim();
 
@@ -96,28 +114,27 @@ export default function CheckoutPage() {
     }
 
     try {
-      // 1. Створюємо замовлення через сервіс
+      // 1. Створюємо замовлення
       await OrderService.createOrder({
         customerName: fullName,
         customerPhone: form.phone,
         customerAddress: fullAddress,
-        customerEmail: userEmail,
+        customerEmail: form.email, // Використовуємо email з форми
         shippingMethod,
         paymentMethod,
         cartItems: items,
         totalPrice: cartTotal
       });
 
-      // 2. РОЗГАЛУЖЕННЯ: Картка чи Готівка?
+      // 2. РОЗГАЛУЖЕННЯ
       if (paymentMethod === 'COD') {
         clearCart();
         alert('✅ Замовлення успішно оформлено!');
         router.push('/profile?tab=orders');
       } else {
-        // 3. Створюємо сесію Stripe через сервіс
         const stripeData = await OrderService.createCheckoutSession({
           items, 
-          email: userEmail 
+          email: form.email 
         });
 
         if (stripeData.url) {
@@ -151,7 +168,6 @@ export default function CheckoutPage() {
           <h2 className="text-2xl font-bold mb-6 text-slate-900">Оформлення</h2>
           <form onSubmit={handleSubmit} className="space-y-6">
             
-            {/* 1. Контакти (Розділене ПІБ + Телефон) */}
             <div className="space-y-3">
               <p className="text-xs font-bold text-gray-400 uppercase">1. Контакти</p>
               
@@ -165,11 +181,14 @@ export default function CheckoutPage() {
               <input type="text" className={inputStyles} placeholder="По батькові (необов'язково)"
                 value={form.middleName} onChange={e => setForm({...form, middleName: e.target.value})} />
               
+              {/* НОВЕ ПОЛЕ EMAIL */}
+              <input required type="email" className={inputStyles} placeholder="Email (для відстеження)"
+                value={form.email} onChange={e => setForm({...form, email: e.target.value})} />
+
               <input required type="tel" className={inputStyles} placeholder="+380XXXXXXXXX"
                 value={form.phone} onChange={handlePhoneChange} />
             </div>
 
-            {/* 2. Доставка */}
             <div className="space-y-3">
               <p className="text-xs font-bold text-gray-400 uppercase">2. Доставка</p>
               
@@ -185,8 +204,7 @@ export default function CheckoutPage() {
               </div>
 
               {shippingMethod === 'NOVA' ? (
-                <div className="space-y-3 animate-fade-in-up">
-                  {/* Місто */}
+                <div className="space-y-3">
                   <div className="relative">
                     <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Місто</label>
                     <input 
@@ -211,7 +229,6 @@ export default function CheckoutPage() {
                     )}
                   </div>
 
-                  {/* Відділення */}
                   <div className="relative">
                     <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Відділення</label>
                     <select 
@@ -229,7 +246,7 @@ export default function CheckoutPage() {
                   </div>
                 </div>
               ) : (
-                <div className="space-y-3 animate-fade-in-up">
+                <div className="space-y-3">
                   <div className="grid grid-cols-3 gap-3">
                     <div className="col-span-1">
                         <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Індекс</label>
@@ -251,7 +268,6 @@ export default function CheckoutPage() {
               )}
             </div>
 
-            {/* 3. Оплата */}
             <div className="space-y-3">
               <p className="text-xs font-bold text-gray-400 uppercase">3. Оплата</p>
               <div className="space-y-2">
@@ -276,19 +292,18 @@ export default function CheckoutPage() {
               </div>
             </div>
             
-            {/* Кнопка відправки (з перевіркою isFormValid) */}
             <button 
-              disabled={loading || !isFormValid()} 
+              disabled={loading || !isValid} 
               className={`w-full py-4 text-white font-bold rounded-xl mt-4 transition shadow-lg 
-                ${(!isFormValid() || loading) 
+                ${(!isValid || loading) 
                   ? 'bg-gray-300 cursor-not-allowed opacity-70' 
                   : (paymentMethod === 'CARD' ? 'bg-indigo-600 hover:bg-indigo-700 active:scale-95' : 'bg-slate-900 hover:bg-slate-800 active:scale-95')
                 }`}
             >
               {loading 
                 ? 'Обробка...' 
-                : (!isFormValid() 
-                    ? 'ЗАПОВНІТЬ ВСІ ДАНІ' 
+                : (!isValid 
+                    ? `ЗАПОВНІТЬ ДАНІ: ${validationError?.toUpperCase()}` 
                     : (paymentMethod === 'CARD' 
                         ? `ОПЛАТИТИ ЗАМОВЛЕННЯ (${cartTotal} ₴)` 
                         : `ПІДТВЕРДИТИ ЗАМОВЛЕННЯ (${cartTotal} ₴)`
@@ -338,4 +353,3 @@ export default function CheckoutPage() {
     </main>
   ); 
 }
-
