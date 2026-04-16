@@ -12,6 +12,7 @@ export interface RepoCreateOrderData {
   totalPrice: number;
   status: string;
   items: {
+    productId: number;
     productTitle: string;
     price: number;
     quantity: number;
@@ -24,14 +25,33 @@ export class OrderRepository {
   async create(data: RepoCreateOrderData) {
     const { items, ...orderInfo } = data;
     
-    return await prisma.order.create({
-      data: {
-        ...orderInfo,
-        items: { create: items }
+
+    return await prisma.$transaction(async (tx) => {
+      
+      const itemsForOrderDb = items.map(({ productId, ...rest }) => rest);
+      
+      const newOrder = await tx.order.create({
+        data: {
+          ...orderInfo,
+          items: { create: itemsForOrderDb } 
+        }
+      });
+
+  
+      for (const item of items) {
+        await tx.product.update({
+          where: { id: item.productId }, 
+          data: {
+            stock: { 
+              decrement: item.quantity 
+            }
+          }
+        });
       }
+
+      return newOrder;
     });
   }
-
  
   async findAll() {
     return await prisma.order.findMany({

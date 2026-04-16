@@ -12,7 +12,7 @@ import { Suspense } from 'react';
 const inter = Inter({ subsets: ['latin', 'cyrillic'] });
 
 export const metadata: Metadata = {
-  title: 'FIRMOVUY | Streetwear Store',
+  title: 'FIRMOVUY',
   description: 'Магазин стильного одягу',
 };
 
@@ -32,6 +32,7 @@ export default function RootLayout({
 
             {/* 2. Обгортаємо Header у Suspense */}
             <Suspense fallback={<div className="h-20" />}>
+            
               <Header />
               
             </Suspense>

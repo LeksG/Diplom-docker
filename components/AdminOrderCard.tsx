@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { OrderService } from '@/services/api';
 
 interface OrderProps {
-  order: any; // Тут спрощений тип, щоб не ускладнювати
+  order: any; 
 }
 
 // Список можливих статусів
@@ -75,7 +75,7 @@ export default function AdminOrderCard({ order }: OrderProps) {
       {/* ШАПКА ЗАМОВЛЕННЯ */}
       <div className="bg-gray-50 p-4 border-b border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <span className="font-bold text-lg mr-3">#{order.id}</span>
+          <span className="font-bold text-slate-900 text-lg mr-3">#{order.id}</span>
           <span className="text-gray-500 text-sm">
             {new Date(order.createdAt).toLocaleString()}
           </span>
@@ -87,9 +87,7 @@ export default function AdminOrderCard({ order }: OrderProps) {
             value={formData.status}
             onChange={(e) => {
               setFormData({...formData, status: e.target.value});
-              // Якщо ми не в режимі редагування, можна одразу спробувати зберегти статус, 
-              // але для безпеки краще через кнопку "Зберегти" в режимі редагування, 
-              // або можна зробити автозбереження тут.
+              
             }}
             disabled={!isEditing}
             className={`px-3 py-2 rounded-lg text-sm font-bold border outline-none appearance-none cursor-pointer ${getStatusColor(formData.status)} ${!isEditing && 'opacity-100'}`}
@@ -106,14 +104,14 @@ export default function AdminOrderCard({ order }: OrderProps) {
         
         {/* ЛІВА КОЛОНКА: Дані клієнта */}
         <div>
-          <h3 className="text-xs font-bold text-gray-400 uppercase mb-4">Дані клієнта</h3>
+          <h3 className="text-xs font-bold text-slate-900 uppercase mb-4">Дані клієнта</h3>
           
           <div className="space-y-3">
             <div>
-              <label className="text-xs text-gray-500 block">Ім'я</label>
+              <label className="text-xs text-slate-900 block">Ім'я</label>
               {isEditing ? (
                 <input 
-                  type="text" className="w-full border p-2 rounded" 
+                  type="text" className="w-full text-slate-900 border p-2 rounded" 
                   value={formData.customerName} onChange={e => setFormData({...formData, customerName: e.target.value})} 
                 />
               ) : (
@@ -122,10 +120,10 @@ export default function AdminOrderCard({ order }: OrderProps) {
             </div>
 
             <div>
-              <label className="text-xs text-gray-500 block">Телефон</label>
+              <label className="text-xs text-slate-900 block">Телефон</label>
               {isEditing ? (
                 <input 
-                  type="text" className="w-full border p-2 rounded" 
+                  type="text" className="w-full text-slate-900 border p-2 rounded" 
                   value={formData.customerPhone} onChange={e => setFormData({...formData, customerPhone: e.target.value})} 
                 />
               ) : (
@@ -134,10 +132,10 @@ export default function AdminOrderCard({ order }: OrderProps) {
             </div>
 
             <div>
-              <label className="text-xs text-gray-500 block">Адреса доставки</label>
+              <label className="text-xs text-slate-900 block">Адреса доставки</label>
               {isEditing ? (
                 <input 
-                  type="text" className="w-full border p-2 rounded" 
+                  type="text" className="w-full text-slate-900 border p-2 rounded" 
                   value={formData.customerAddress} onChange={e => setFormData({...formData, customerAddress: e.target.value})} 
                 />
               ) : (
@@ -147,8 +145,8 @@ export default function AdminOrderCard({ order }: OrderProps) {
             
             {order.customerEmail && (
                <div>
-                  <label className="text-xs text-gray-500 block">Email (Акаунт)</label>
-                  <p className="text-slate-900">{order.customerEmail}</p>
+                  <label className="text-xs text-slate-900 block">Email (Акаунт)</label>
+                  <p className="font-bold text-slate-900">{order.customerEmail}</p>
                </div>
             )}
           </div>
@@ -156,20 +154,20 @@ export default function AdminOrderCard({ order }: OrderProps) {
 
         {/* ПРАВА КОЛОНКА: Товари */}
         <div>
-          <h3 className="text-xs font-bold text-gray-400 uppercase mb-4">Товари</h3>
-          <ul className="space-y-3 bg-gray-50 p-4 rounded-xl">
+          <h3 className="text-xs font-bold text-slate-900 uppercase mb-4">Товари</h3>
+          <ul className="space-y-3 text-slate-900 bg-gray-50 p-4 rounded-xl">
             {order.items.map((item: any) => (
               <li key={item.id} className="flex justify-between items-center border-b border-gray-200 pb-2 last:border-0 last:pb-0">
                 <div>
                   <p className="font-bold text-sm">{item.productTitle}</p>
-                  <p className="text-xs text-gray-500">{item.size} {item.color ? `| ${item.color}` : ''} (x{item.quantity})</p>
+                  <p className="text-xs text-slate-900">{item.size} {item.color ? `| ${item.color}` : ''} (x{item.quantity})</p>
                 </div>
                 <p className="font-bold">{item.price} ₴</p>
               </li>
             ))}
           </ul>
           <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-100">
-            <span className="font-bold text-lg">Сума:</span>
+            <span className="text-slate-900 font-bold text-lg">Сума:</span>
             <span className="font-black text-2xl text-blue-600">{order.totalPrice} ₴</span>
           </div>
         </div>

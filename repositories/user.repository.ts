@@ -1,4 +1,3 @@
-
 import { prisma } from '@/lib/prisma';
 
 export class UserRepository {
@@ -12,7 +11,10 @@ export class UserRepository {
     return await prisma.user.update({
       where: { email },
       data: {
-        fullName: data.fullName,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        middleName: data.middleName,
+        
         phone: data.phone,
         country: data.country,
         city: data.city,
@@ -21,12 +23,15 @@ export class UserRepository {
     });
   }
 
-  async create(data: { email: string; passwordHash: string; fullName?: string }) {
+  async create(data: { email: string; password: string; firstName: string; lastName: string; middleName?: string }) {
     return await prisma.user.create({
       data: {
         email: data.email,
-        password: data.passwordHash,
-        fullName: data.fullName,
+        password: data.password,
+        firstName: data.firstName,
+        lastName: data.lastName,
+  
+        middleName: data.middleName || "", 
       },
     });
   }

@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 
 // Тип товару
 export interface CartItem {
@@ -13,7 +13,6 @@ export interface CartItem {
   quantity: number;
 }
 
-// Тип контексту 
 interface CartContextType {
   items: CartItem[];
   addToCart: (item: CartItem) => void;
@@ -32,25 +31,65 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Завантаження
-  useEffect(() => {
-    const savedCart = localStorage.getItem('cart');
+  // 1. Функція для динамічного ключа
+  const getCartKey = useCallback(() => {
+    if (typeof window === 'undefined') return 'cart_guest';
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        return `cart_${user.email}`; // Ключ виду cart_stas@test.com
+      } catch {
+        return 'cart_guest';
+      }
+    }
+    return 'cart_guest';
+  }, []);
+
+  // 2. Функція завантаження даних
+  const loadCart = useCallback(() => {
+    const key = getCartKey();
+    const savedCart = localStorage.getItem(key);
     if (savedCart) {
       try {
         setItems(JSON.parse(savedCart));
       } catch (e) {
-        console.error('Помилка кошика', e);
+        console.error('Помилка парсингу кошика', e);
+        setItems([]);
       }
+    } else {
+      setItems([]); // Якщо для цього юзера ще немає кошика
     }
     setIsLoaded(true);
-  }, []);
+  }, [getCartKey]);
 
-  // Збереження
+  // 3. Ефект при першому завантаженні та зміні акаунта
+  useEffect(() => {
+    loadCart();
+
+    // Слухаємо подію входу/виходу (StorageEvent працює між вкладками)
+    const handleAuthChange = () => {
+      setIsLoaded(false);
+      loadCart();
+    };
+
+    window.addEventListener('storage', handleAuthChange);
+    // Додаємо власну подію для миттєвого оновлення в межах однієї вкладки
+    window.addEventListener('user-auth-change', handleAuthChange);
+
+    return () => {
+      window.removeEventListener('storage', handleAuthChange);
+      window.removeEventListener('user-auth-change', handleAuthChange);
+    };
+  }, [loadCart]);
+
+  // 4. Збереження даних при зміні items
   useEffect(() => {
     if (isLoaded) {
-      localStorage.setItem('cart', JSON.stringify(items));
+      const key = getCartKey();
+      localStorage.setItem(key, JSON.stringify(items));
     }
-  }, [items, isLoaded]);
+  }, [items, isLoaded, getCartKey]);
 
   const addToCart = (newItem: CartItem) => {
     setItems((prev) => {
@@ -69,10 +108,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems((prev) => prev.filter((i) => !(i.id === id && i.size === size && i.color === color)));
   };
 
-  
   const clearCart = () => {
+    const key = getCartKey();
     setItems([]); 
-    localStorage.removeItem('cart');
+    localStorage.removeItem(key);
   };
 
   const toggleCart = () => setIsCartOpen((prev) => !prev);

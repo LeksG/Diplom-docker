@@ -9,6 +9,7 @@ export class OrderService {
     
     
     const formattedItems = cartItems.map((item) => ({
+      productId: Number(item.id),
       productTitle: item.title,
       price: Number(item.price), 
       quantity: item.quantity ? Number(item.quantity) : 1,

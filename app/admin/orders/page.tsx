@@ -40,7 +40,7 @@ export default async function AdminOrdersPage() {
         <div className="space-y-6">
           {orders.length === 0 ? (
             <div className="text-center py-20 bg-white rounded-2xl shadow-sm">
-              <p className="text-gray-400 text-lg">Замовлень поки немає</p>
+              <p className="text-slate-900 text-lg">Замовлень поки немає</p>
             </div>
           ) : (
             orders.map((order) => (

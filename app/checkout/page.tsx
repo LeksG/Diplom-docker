@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { searchCities, getWarehouses } from '@/lib/novaposhta';
@@ -29,13 +29,24 @@ export default function CheckoutPage() {
     ukrAddress: ''
   });
 
-  // Автозаповнення email для залогінених користувачів
-  useEffect(() => {
+  // Автозаповнення
+useEffect(() => {
     if (typeof window !== 'undefined') {
       const userStr = localStorage.getItem('user');
       if (userStr) {
         const user = JSON.parse(userStr);
-        if (user.email) setForm(prev => ({ ...prev, email: user.email }));
+        
+        setForm(prev => {
+          const updatedForm = { ...prev };
+          
+          // Підтягуємо Email (обов'язково) і телефон (якщо він раптом є)
+          if (user.email) updatedForm.email = user.email;
+          if (user.phone) updatedForm.phone = user.phone;
+          if (user.firstName) updatedForm.firstName = user.firstName;
+          if (user.lastName) updatedForm.lastName = user.lastName;
+          if (user.middleName) updatedForm.middleName = user.middleName;
+          return updatedForm;
+        });
       }
     }
   }, []);

@@ -7,7 +7,7 @@ import { useWishlist } from '@/context/WishlistContext';
 import { UserService, OrderService } from '@/services/api';
 import Cookies from 'js-cookie';
 
-// ТИПИ ДАНИХ 
+// ТИПИ ДАНИХ (Оновлено)
 interface OrderItem {
   id: number;
   productTitle: string;
@@ -41,11 +41,13 @@ function ProfileContent() {
   const [isSaving, setIsSaving] = useState(false);
   const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
 
-  // Дані
+  // Дані (Оновлено поля імені)
   const [orders, setOrders] = useState<Order[]>([]);
   const [userData, setUserData] = useState({
     email: '',
-    fullName: '',
+    firstName: '',
+    lastName: '',
+    middleName: '',
     phone: '',
     country: '',
     city: '',
@@ -62,7 +64,7 @@ function ProfileContent() {
     }
   }, [searchParams]);
   
-  // 1. ЗАВАНТАЖЕННЯ ДАНИХ 
+  // 1. ЗАВАНТАЖЕННЯ ДАНИХ (Оновлено)
   useEffect(() => {
     const initProfile = async () => {
       const storedUser = localStorage.getItem('user');
@@ -79,7 +81,9 @@ function ProfileContent() {
         
         setUserData({
           email: freshData.email,
-          fullName: freshData.fullName || parsedUser.name || '',
+          firstName: freshData.firstName || '',
+          lastName: freshData.lastName || '',
+          middleName: freshData.middleName || '',
           phone: freshData.phone || '',
           country: freshData.country || '',
           city: freshData.city || '',
@@ -111,7 +115,7 @@ function ProfileContent() {
     }
   }, [activeTab, userData.email]);
 
-  // 3. ЗБЕРЕЖЕННЯ 
+  // 3. ЗБЕРЕЖЕННЯ (Оновлено)
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setNotification(null);
@@ -121,7 +125,13 @@ function ProfileContent() {
       const updated = await UserService.updateProfile(userData);
       
       const localData = JSON.parse(localStorage.getItem('user') || '{}');
-      localStorage.setItem('user', JSON.stringify({ ...localData, name: updated.fullName }));
+      // Оновлюємо localStorage, зберігаючи нове ім'я для хедера
+      localStorage.setItem('user', JSON.stringify({ 
+        ...localData, 
+        firstName: updated.firstName,
+        lastName: updated.lastName 
+      }));
+      localStorage.setItem('userName', updated.firstName);
       
       window.dispatchEvent(new Event('storage')); 
       
@@ -136,14 +146,14 @@ function ProfileContent() {
 
   const handleLogout = () => {
     if (confirm('Ви впевнені, що хочете вийти з акаунту?')) {
-    Cookies.remove('token', { path: '/' });
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('userName');
-    window.location.href = '/';
+      Cookies.remove('token', { path: '/' });
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('userName');
+      window.dispatchEvent(new Event('user-auth-change'));
+      window.location.href = '/';
     }
   };
-
 
   const getStatusLabel = (status: string) => {
     const map: Record<string, string> = {
@@ -182,10 +192,12 @@ function ProfileContent() {
             <div className="bg-white rounded-2xl shadow-sm overflow-hidden sticky top-24 border border-gray-100">
               <div className="p-8 flex flex-col items-center bg-slate-900 text-white">
                 <div className="w-20 h-20 rounded-full bg-blue-600 flex items-center justify-center text-3xl font-bold mb-4 border-4 border-slate-700">
-                  {userData.fullName ? userData.fullName[0].toUpperCase() : '👤'}
+                  {userData.firstName ? userData.firstName[0].toUpperCase() : '👤'}
                 </div>
-                <h3 className="font-bold text-center leading-tight">{userData.fullName || 'Користувач'}</h3>
-                <p className="text-slate-900 text-sm text-gray-400 mt-1">{userData.email}</p>
+                <h3 className="font-bold text-center leading-tight">
+                  {userData.lastName} {userData.firstName}
+                </h3>
+                <p className="text-sm text-gray-400 mt-1">{userData.email}</p>
               </div>
               
               <nav className="p-3 space-y-1">
@@ -212,21 +224,45 @@ function ProfileContent() {
           {/* ПРАВА ЧАСТИНА */}
           <div className="flex-grow">
             
-            {/* 1. РЕДАГУВАННЯ */}
+            {/* 1. РЕДАГУВАННЯ (Оновлено поля) */}
             {activeTab === 'info' && (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 animate-fade-in-up">
                 <h2 className="text-2xl font-bold mb-6 text-slate-900">Особисті дані</h2>
                 <form onSubmit={handleSave} className="space-y-6">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">ПІБ</label>
-                    <input 
-                      type="text" 
-                      value={userData.fullName} 
-                      onChange={(e) => setUserData({...userData, fullName: e.target.value})} 
-                      className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-slate-900 placeholder:text-gray-500 outline-none focus:border-blue-500 transition" 
-                      placeholder="Ваше ім'я" 
-                    />
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Прізвище</label>
+                      <input 
+                        type="text" 
+                        value={userData.lastName} 
+                        onChange={(e) => setUserData({...userData, lastName: e.target.value})} 
+                        className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-slate-900 outline-none focus:border-blue-500 transition" 
+                        placeholder="Прізвище" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Ім'я</label>
+                      <input 
+                        type="text" 
+                        value={userData.firstName} 
+                        onChange={(e) => setUserData({...userData, firstName: e.target.value})} 
+                        className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-slate-900 outline-none focus:border-blue-500 transition" 
+                        placeholder="Ім'я" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-2">По батькові</label>
+                      <input 
+                        type="text" 
+                        value={userData.middleName} 
+                        onChange={(e) => setUserData({...userData, middleName: e.target.value})} 
+                        className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-slate-900 outline-none focus:border-blue-500 transition" 
+                        placeholder="По батькові" 
+                      />
+                    </div>
                   </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Телефон</label>
@@ -234,7 +270,7 @@ function ProfileContent() {
                           type="text" 
                           value={userData.phone} 
                           onChange={(e) => setUserData({...userData, phone: e.target.value})} 
-                          className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-slate-900 placeholder:text-gray-500 outline-none focus:border-blue-500 transition" 
+                          className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-slate-900 outline-none focus:border-blue-500 transition" 
                           placeholder="+380..." 
                         />
                       </div>
@@ -248,13 +284,14 @@ function ProfileContent() {
                         />
                       </div>
                   </div>
+
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Місто</label>
                     <input 
                       type="text" 
                       value={userData.city} 
                       onChange={(e) => setUserData({...userData, city: e.target.value})} 
-                      className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-slate-900 placeholder:text-gray-500 outline-none focus:border-blue-500 transition" 
+                      className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-slate-900 outline-none focus:border-blue-500 transition" 
                       placeholder="Київ" 
                     />
                   </div>
@@ -264,7 +301,7 @@ function ProfileContent() {
                       type="text" 
                       value={userData.address} 
                       onChange={(e) => setUserData({...userData, address: e.target.value})} 
-                      className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-slate-900 placeholder:text-gray-500 outline-none focus:border-blue-500 transition" 
+                      className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-slate-900 outline-none focus:border-blue-500 transition" 
                       placeholder="Відділення №..." 
                     />
                   </div>
@@ -275,7 +312,7 @@ function ProfileContent() {
               </div>
             )}
 
-            {/* 2. ІСТОРІЯ ЗАМОВЛЕНЬ */}
+           {/* 2. ІСТОРІЯ ЗАМОВЛЕНЬ */}
             {activeTab === 'orders' && (
               <div className="space-y-6 animate-fade-in-up">
                 <h2 className="text-2xl font-bold text-slate-900">Історія замовлень</h2>
@@ -416,6 +453,7 @@ function ProfileContent() {
     </main>
   );
 }
+
 
 export default function ProfilePage() {
   return (

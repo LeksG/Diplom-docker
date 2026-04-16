@@ -1,8 +1,9 @@
 export interface UserResponseDTO {
   id: string;        
   email: string;
-  fullName: string | null; 
+  firstName: string | null; 
   role: string;
+  password?: string;
 }
 
 export interface AuthResponseDTO {

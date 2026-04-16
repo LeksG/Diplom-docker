@@ -1,8 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-
-// Додаємо імпорт сервісу
 import { ReviewService } from '@/services/api';
 
 // Іконки

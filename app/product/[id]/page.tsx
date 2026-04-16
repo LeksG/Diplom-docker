@@ -30,7 +30,9 @@ async function getProductData(idString: string) {
     const flatReviews = await prisma.review.findMany({
       where: { productId: id },
       include: { 
-        user: { select: { fullName: true } } 
+        user: { select: { 
+          firstName: true, 
+          lastName: true } } 
       },
       orderBy: { createdAt: 'asc' } 
     });

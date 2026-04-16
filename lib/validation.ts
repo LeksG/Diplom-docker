@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
 export const RegisterSchema = z.object({
-  fullName: z
+  firstName: z
     .string()
-    .min(2, { message: "Ім'я має містити мінімум 2 літери" })
-    .max(50, { message: "Ім'я занадто довге (макс 50)" })
+    .min(3, { message: "Ім'я має містити мінімум 3 літери" })
+    .max(16, { message: "Ім'я занадто довге (макс 16)" })
     .regex(/^[a-zA-Zа-яА-ЯіїєґІЇЄҐ\s]+$/, { message: "Ім'я може містити лише літери" }),
 
   email: z
@@ -16,5 +16,6 @@ export const RegisterSchema = z.object({
     .string()
     .min(8, { message: "Пароль має бути не менше 8 символів" })
     .regex(/[A-Z]/, { message: "Пароль має містити хоча б одну велику літеру" })
-    .regex(/[0-9]/, { message: "Пароль має містити хоча б одну цифру" }),
+    .regex(/[0-9]/, { message: "Пароль має містити хоча б одну цифру" })
+    .regex(/[!@#$%^&*]/, { message: "Пароль має містити хоча б один спеціальний символ" })
 });
