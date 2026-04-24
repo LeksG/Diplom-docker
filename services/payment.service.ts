@@ -11,10 +11,10 @@ export class PaymentService {
       price_data: {
         currency: 'uah',
         product_data: {
-          name: item.title,
-          images: item.imageUrl ? [item.imageUrl] : [],
+          name: item.product.title,
+          images: item.product.imageUrl ? [item.product.imageUrl] : [],
         },
-        unit_amount: Math.round(item.price * 100),
+        unit_amount: Math.round(item.product.price * 100),
       },
       quantity: item.quantity,
     }));
