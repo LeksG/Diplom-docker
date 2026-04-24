@@ -14,7 +14,7 @@ export class ReviewRepository {
   async create(data: any) {
     return await prisma.review.create({
       data,
-      include: { user: { select: { fullName: true } } }
+      include: { user: { select: { firstName: true } } }
     });
   }
 
