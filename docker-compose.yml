@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  shop_app:
+    build: .
+    container_name: nextjs_shop_diploma
+    restart: always
+    ports:
+      - "3000:3000"
+    # Докер автоматично підтягне всі налаштування з твого файлу .env!
+    env_file:
+      - .env

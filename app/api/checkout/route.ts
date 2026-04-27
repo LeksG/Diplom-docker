@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 import { PaymentService } from '@/services/payment.service';
 
-const paymentService = new PaymentService();
+export const dynamic = 'force-dynamic';
+
 
 export async function POST(req: Request) {
   try {
+    const paymentService = new PaymentService();
     const body = await req.json();
 
     if (!body.items || body.items.length === 0) {

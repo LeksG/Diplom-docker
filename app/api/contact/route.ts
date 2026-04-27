@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { EmailService } from '@/services/email.service';
-
-const emailService = new EmailService();
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   try {
+    const emailService = new EmailService();
     const body = await req.json();
 
     if (!body.name || !body.contactInfo || !body.message) {
