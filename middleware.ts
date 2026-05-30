@@ -49,7 +49,7 @@ export async function middleware(req: NextRequest) {
         return NextResponse.next();
     }
 
-    const isApiUser = pathname.startsWith('/api/user') || pathname.startsWith('/api/order');;
+    const isApiUser = pathname.startsWith('/api/user') || pathname.startsWith('/api/order') && req.method !== 'POST';
     const isApiAdmin = pathname.startsWith('/api/admin') || 
                   (pathname.startsWith('/api/products') && ['POST', 'DELETE', 'PUT', 'PATCH'].includes(req.method)) ||
                   (pathname.startsWith('/api/orders') && ['DELETE', 'PATCH'].includes(req.method));
