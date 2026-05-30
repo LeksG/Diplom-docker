@@ -7,6 +7,6 @@ services:
     restart: always
     ports:
       - "3000:3000"
-    # Докер автоматично підтягне всі налаштування з твого файлу .env!
+  
     env_file:
       - .env

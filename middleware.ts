@@ -61,7 +61,11 @@ export async function middleware(req: NextRequest) {
     }
 
     const authHeader = req.headers.get('authorization');
-    const token = authHeader?.split(' ')[1];
+    let token = authHeader?.split(' ')[1];
+
+    if (!token) {
+      token = req.cookies.get('token')?.value;
+    }
 
     if (!token) {
       return NextResponse.json({ message: '401 Unauthorized' }, { status: 401, headers: corsHeaders });

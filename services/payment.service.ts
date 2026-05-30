@@ -8,26 +8,30 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_dummy', {
 
 export class PaymentService {
   async createCheckoutSession(data: CheckoutRequestDTO) {
-    const line_items = data.items.map((item) => ({
-      price_data: {
-        currency: 'uah',
-        product_data: {
-          name: item.product.title,
-          images: item.product.imageUrl ? [item.product.imageUrl] : [],
+    const line_items = data.items.map((item: any) => {
+      // Робимо код універсальним: беремо item.product, а якщо його немає - беремо сам item
+      const productData = item.product || item;
+
+      return {
+        price_data: {
+          currency: 'uah',
+          product_data: {
+            name: productData.title || 'Товар без назви', // Беремо назву з правильного місця
+            images: productData.imageUrl ? [productData.imageUrl] : [],
+          },
+          unit_amount: Math.round((productData.price || 0) * 100), // Беремо ціну з правильного місця
         },
-        unit_amount: Math.round(item.product.price * 100),
-      },
-      quantity: item.quantity,
-    }));
+        quantity: item.quantity || 1,
+      };
+    });
 
     return await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items,
       mode: 'payment',
       customer_email: data.email,
-      // Тут також можна додати fallback, щоб не було undefined під час білду
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/profile?status=success`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/cart?status=canceled`,
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3001'}/profile?status=success`,
+      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3001'}/cart?status=canceled`,
     });
   }
 }
