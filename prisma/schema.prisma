@@ -21,7 +21,7 @@ model User {
   address   String?
   country   String?
   city      String?
-  // orders   Order[] // Поки вимкнемо
+  orders   Order[]
   reviews   Review[]
 }
 
@@ -92,6 +92,8 @@ model Order {
   customerPhone   String
   customerAddress String 
   customerEmail   String?
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id])
   shippingMethod  String   @default("NOVA") 
   paymentMethod   String   @default("COD")  
   status     String   @default("NEW") 

@@ -30,8 +30,8 @@ export class PaymentService {
       line_items,
       mode: 'payment',
       customer_email: data.email,
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3001'}/profile?status=success`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3001'}/cart?status=canceled`,
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/profile?status=success`,
+      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/cart?status=canceled`,
     });
   }
 }

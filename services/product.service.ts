@@ -4,9 +4,6 @@ import { CreateProductDto, UpdateProductDto } from '@/dto/product.dto';
 export class ProductService {
   private repository = new ProductRepository();
 
- 
-   
-   
   private prepareProductData(body: CreateProductDto | UpdateProductDto, isUpdate = false) {
     const { variants, images, categoryId, price, oldPrice, ...rest } = body;
     
@@ -30,7 +27,6 @@ export class ProductService {
       colors: variants ? allColors : undefined,
       availableSizes: variants ? allSizes : undefined,
       
-     
       category: categoryId ? { connect: { id: Number(categoryId) } } : undefined,
       
       variants: variants ? { 
@@ -42,7 +38,6 @@ export class ProductService {
         })) 
       } : undefined,
       
-  
       images: images ? { 
         ...(isUpdate ? { deleteMany: {} } : {}),
         create: images.map(img => ({ 
@@ -52,14 +47,14 @@ export class ProductService {
       } : undefined
     };
 
-  
     Object.keys(data).forEach(key => data[key] === undefined && delete data[key]);
     
     return data;
   }
 
-  async getAll() {
-    return await this.repository.findAll();
+  // 👇 Оновлений метод з підтримкою фільтрів
+  async getAll(filters?: { color?: string | null }) {
+    return await this.repository.findAll(filters);
   }
 
   async getOne(id: number) {

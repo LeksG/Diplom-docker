@@ -18,6 +18,7 @@ interface Product {
   imageUrl: string | null;
   category: Category;
   sizes: string[];
+  colors: string[]; // Поле для кольорів
   createdAt: Date;
 }
 
@@ -26,17 +27,19 @@ interface CatalogProps {
   categories: Category[];
 }
 
-// Створюємо внутрішній компонент для логіки, яка використовує useSearchParams
 function CatalogContent({ initialProducts, categories }: CatalogProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const maxGlobalPrice = Math.max(...initialProducts.map(p => Number(p.price)), 1000);
   const minGlobalPrice = 0;
+  
   const [products, setProducts] = useState(initialProducts);
   const initialCategory = searchParams.get('category') || 'all';
   const searchQuery = searchParams.get('search') || '';
+  
   const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory);
   const [selectedSize, setSelectedSize] = useState<string>('all');
+  const [selectedColor, setSelectedColor] = useState<string>('all');
   const [priceRange, setPriceRange] = useState([minGlobalPrice, maxGlobalPrice]);
   const [sortOrder, setSortOrder] = useState('newest');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -49,6 +52,7 @@ function CatalogContent({ initialProducts, categories }: CatalogProps) {
   useEffect(() => {
     let result = [...initialProducts];
 
+    // Пошук
     if (searchQuery) {
       const lowerQuery = searchQuery.toLowerCase();
       result = result.filter(p => 
@@ -56,19 +60,28 @@ function CatalogContent({ initialProducts, categories }: CatalogProps) {
       );
     }
 
+    // Фільтр Категорій
     if (selectedCategory !== 'all') {
       result = result.filter(p => p.category.slug === selectedCategory);
     }
 
+    // Фільтр Розмірів
     if (selectedSize !== 'all') {
-      result = result.filter(p => p.sizes.includes(selectedSize));
+      result = result.filter(p => p.sizes?.includes(selectedSize));
     }
 
+    // Фільтр Кольорів
+    if (selectedColor !== 'all') {
+      result = result.filter(p => p.colors?.includes(selectedColor));
+    }
+
+    // Фільтр Ціни
     result = result.filter(p => {
       const price = Number(p.price);
       return price >= priceRange[0] && price <= priceRange[1];
     });
 
+    // Сортування
     if (sortOrder === 'price_asc' || sortOrder === 'price-asc') {
       result.sort((a, b) => Number(a.price) - Number(b.price));
     } else if (sortOrder === 'price_desc' || sortOrder === 'price-desc') {
@@ -78,7 +91,7 @@ function CatalogContent({ initialProducts, categories }: CatalogProps) {
     }
 
     setProducts(result);
-  }, [selectedCategory, selectedSize, priceRange, sortOrder, initialProducts, searchQuery]);
+  }, [selectedCategory, selectedSize, selectedColor, priceRange, sortOrder, initialProducts, searchQuery]);
 
   const changeCategory = (slug: string) => {
     setSelectedCategory(slug);
@@ -90,6 +103,24 @@ function CatalogContent({ initialProducts, categories }: CatalogProps) {
   };
 
   const allSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+  
+  // Автоматично збираємо всі унікальні кольори
+  const allColors = Array.from(new Set(initialProducts.flatMap(p => p.colors || []))).filter(Boolean);
+
+  // Словник кольорів для кружечків
+  const colorMap: Record<string, string> = {
+    'чорний': '#000000',
+    'білий': '#FFFFFF',
+    'червоний': '#ef4444',
+    'синій': '#3b82f6',
+    'зелений': '#22c55e',
+    'бежевий': '#f5f5dc',
+    'сірий': '#6b7280',
+    'рожевий': '#ec4899',
+    'жовтий': '#eab308',
+    'коричневий': '#92400e',
+    'блакитний': '#0ea5e9'
+  };
 
   const sidebarStructure = [
     {
@@ -198,6 +229,53 @@ function CatalogContent({ initialProducts, categories }: CatalogProps) {
             ))}
           </div>
         </div>
+
+        {/* Блок кольорів (Кружечки) */}
+        {allColors.length > 0 && (
+          <div className="pt-6 border-t border-gray-100">
+            <h3 className="font-bold text-slate-900 mb-4 uppercase text-sm">Колір</h3>
+            <div className="flex flex-wrap gap-3 items-center">
+              
+              <button 
+                onClick={() => setSelectedColor('all')} 
+                className={`px-3 py-1.5 text-sm rounded-lg border transition ${
+                  selectedColor === 'all' 
+                    ? 'bg-slate-900 text-white border-slate-900' 
+                    : 'bg-white text-slate-700 border-gray-200 hover:border-gray-400'
+                }`}
+              >
+                Всі
+              </button>
+
+              {allColors.map((color) => {
+                const hexColor = colorMap[color] || '#e5e7eb'; 
+                const isActive = selectedColor === color;
+
+                return (
+                  <button 
+                    key={color} 
+                    onClick={() => setSelectedColor(color)} 
+                    title={color}
+                    className={`w-8 h-8 rounded-full transition-all duration-200 flex-shrink-0 relative
+                      ${isActive 
+                        ? 'ring-2 ring-offset-2 ring-slate-900 shadow-md scale-110 border-transparent' 
+                        : 'border border-gray-300 hover:scale-110 hover:shadow-sm'
+                      }
+                    `}
+                    style={{ backgroundColor: hexColor }}
+                  >
+                    {!colorMap[color] && (
+                      <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-gray-500 uppercase">
+                        {color.charAt(0)}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
       </aside>
 
       <div className="flex-grow">
@@ -222,6 +300,7 @@ function CatalogContent({ initialProducts, categories }: CatalogProps) {
             <ProductCard key={product.id} product={product} />
           ))}
         </div>
+        
         {products.length === 0 && (
           <div className="text-center py-20 bg-white rounded-2xl border-2 border-dashed border-gray-100">
             <div className="text-5xl mb-4">🔍</div>
@@ -233,6 +312,9 @@ function CatalogContent({ initialProducts, categories }: CatalogProps) {
             <button 
               onClick={() => {
                   router.push('/catalog');
+                  setSelectedSize('all');
+                  setSelectedColor('all'); 
+                  setPriceRange([minGlobalPrice, maxGlobalPrice]);
               }} 
               className="text-blue-600 font-bold hover:underline"
             >
@@ -245,7 +327,6 @@ function CatalogContent({ initialProducts, categories }: CatalogProps) {
   );
 }
 
-// Головний експорт тепер обгорнутий у Suspense
 export default function CatalogClient(props: CatalogProps) {
   return (
     <Suspense fallback={<div className="text-center py-20 text-gray-500">Завантаження каталогу...</div>}>
